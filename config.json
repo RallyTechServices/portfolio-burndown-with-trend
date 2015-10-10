@@ -1,0 +1,24 @@
+{
+    "name": "Portfolio Item Burnup With Trend",
+    "className": "TSPIBurnupWithTrend",
+    "server": "https://rally1.rallydev.com",
+    "sdk": "2.0",
+    "apiKey": "_PUT_APIKEY_HERE_",
+    "javascript": [
+      "__ts-info-link.js",
+      "__ts-logger.js",
+      "rally-lib/Colors.js",
+      "rally-lib/DateMixin.js",
+      "rally-lib/IntegrationHeaders.js",
+      "rally-lib/settings/RadioGroupSetting.js",
+      "rally-lib/settings/SettingsChangeMixin.js",
+      "rally-lib/settings/DataTypePicker.js",
+      "rally-lib/settings/PortfolioDatePicker.js",
+      "rally-lib/settings/PortfolioItemDataTypePicker.js",
+      "rally-lib/settings/PortfolioItemPicker.js",
+      "rally-lib/settings/ChartSettings.js",
+      "rally-lib/PortfolioChartAppBase.js",
+      "_burn-calculator.js",
+      "app.js"
+   ]
+}

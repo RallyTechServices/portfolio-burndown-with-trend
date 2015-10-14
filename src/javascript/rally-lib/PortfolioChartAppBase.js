@@ -284,7 +284,7 @@
             calcConfig.startDate = calcConfig.startDate || this._getChartStartDate(portfolioItem);
             calcConfig.endDate = calcConfig.endDate || this._getChartEndDate(portfolioItem);
             calcConfig.timeZone = calcConfig.timeZone || this._getTimeZone();
-    
+            calcConfig.PI = portfolioItem;
             this.chartComponentConfig.chartConfig.xAxis.tickInterval = this._configureChartTicks(calcConfig.startDate, calcConfig.endDate);
         },
     

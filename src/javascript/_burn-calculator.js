@@ -9,6 +9,13 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
          * to the right of today).
          */
         hideBarsAfterToday: false,
+        /**
+         * 
+         * @type { Ext.data.Model } PI
+         * The portfolio item the chart is based on.  (Used for planned end date calcs.)
+         * 
+         */
+        PI: null,
         
         plotLines: []
     },
@@ -112,24 +119,29 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         return highcharts_data;
     },
     
-    _getTodayIndexFromHighChartsData: function(highcharts_data) {
-        var today_iso = Rally.util.DateTime.toIsoString(new Date());
-        var today_index = -1;
+    _getDateIndexFromDate: function(highcharts_data, check_date) {
+        var date_iso = Rally.util.DateTime.toIsoString(new Date(check_date));
+        var date_index = -1;
+        console.log('_getDateIndexFromDate', date_iso, highcharts_data.categories.length);
+        
         Ext.Array.each(highcharts_data.categories, function(category,idx) {
-            if (category > today_iso && today_index == -1 ) {
-                today_index = idx - 1;
+            if (category > date_iso && date_index == -1 ) {
+                date_index = idx - 1;
             }
         });
         
-        return today_index;
+        if ( date_index === 0 ) {
+            return date_index = -1;
+        }
+        return date_index;
     },
     
     _addPlotlines: function(data) {
         
         this.plotLines = [];
         
-        var today_index = this._getTodayIndexFromHighChartsData(data);
-        
+        var today_index = this._getDateIndexFromDate(data,new Date());
+        // PI
         if ( today_index > -1 ) {
             this.plotLines.push({
                 color: '#000',
@@ -138,10 +150,28 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 value: today_index
             });
         }
+        
+        
+        if ( this.PI && this.PI.PlannedEndDate) {
+            
+            var end_date_index = this._getDateIndexFromDate(data, this.PI.PlannedEndDate);
+            console.log('today index:', today_index);
+            console.log('planned end index:', end_date_index);
+            
+            if ( end_date_index > -1 ) {
+                
+                this.plotLines.push({
+                    color: '#000',
+                    label: { text: 'planned end' },
+                    width: 2,
+                    value: end_date_index
+                });
+            }
+        }
     },
     
     _stripFutureBars: function(data) {
-        var today_index = this._getTodayIndexFromHighChartsData(data);
+        var today_index = this._getDateIndexFromDate(data,new Date());
         
         if ( today_index > -1 ) {
             Ext.Array.each(data.series, function(series) {

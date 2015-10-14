@@ -4,7 +4,6 @@ Ext.define("TSPIBurnupWithTrend", {
     extend: "Rally.apps.charts.rpm.PortfolioChartAppBase",
     cls: "portfolio-burnup-app",
     
-    logger: new Rally.technicalservices.Logger(),
 
     requires: [
         'Rally.ui.chart.Chart',
@@ -47,7 +46,8 @@ Ext.define("TSPIBurnupWithTrend", {
         calculatorConfig: {
             workDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
             timeZone: "GMT",
-            completedScheduleStateNames: ["Accepted"]
+            completedScheduleStateNames: ["Accepted"],
+            hideBarsAfterToday: true
         },
 
         chartColors: [], // reset so we can define our own palette

@@ -55,7 +55,8 @@ Ext.define("TSPIBurnupWithTrend", {
             workDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
             timeZone: "GMT",
             completedScheduleStateNames: ["Accepted"],
-            hideBarsAfterToday: true
+            hideBarsAfterToday: true,
+            showTrend: true
         },
 
         chartColors: [], // reset so we can define our own palette

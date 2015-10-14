@@ -3,10 +3,10 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Oct 14 2015 08:49:46 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Oct 14 2015 13:43:11 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Oct 14 2015 08:49:46 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Oct 14 2015 13:43:11 GMT-0700 (PDT)";
         var CHECKSUM = [%= checksum %];
     </script>
     

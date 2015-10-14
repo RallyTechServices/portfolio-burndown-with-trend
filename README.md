@@ -3,6 +3,13 @@
 A change to the PI Burnup app from the catalog:
 
 * Adds a trend line to the scope to determine the likely end date
+** The trend line is a simple calculation from the first accepted through today's value to the crossing of the scope line.
+** The trend line does not take into account variation in scope.  It's a simple intersection with the line of today's value into eternity.
+** The trend line does not take into account instances where completed is removed, except to the extent that the current completed is higher than the first completed.
+* The trend line will not show if one of the following is true:
+** Today is not on the chart
+** There have not been at least two days with completed items
+** Today is a lower completed value than the first completed value (won't calculate a negative slope)
 * Puts a line on the chart to indicate the day the app is run, the planned 
 end date, and the potential end date
 * Stops showing the burn up after today because that's future information that

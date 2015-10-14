@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Oct 14 2015 08:49:46 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Oct 14 2015 13:43:10 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Oct 14 2015 08:49:46 GMT-0700 (PDT)";
-        var CHECKSUM = 64247106442;
+        var APP_BUILD_DATE = "Wed Oct 14 2015 13:43:10 GMT-0700 (PDT)";
+        var CHECKSUM = 78997982063;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1549,11 +1549,25 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         hideBarsAfterToday: false,
         /**
          * 
-         * @type { Ext.data.Model } PI
-         * The portfolio item the chart is based on.  (Used for planned end date calcs.)
+         * @type { Object } PI
+         * The portfolio item the chart is based on.  ( Passed in as an object (record.getData()).
+         * Used for planned end date calcs.)
          * 
          */
         PI: null,
+        /**
+         * 
+         * @cfg {Boolean} showTrend
+         * Pass true to show a trend line from the PI's actual start through the value 
+         * of today and intersecting the scope line.  
+         * 
+         * For the trend line to show:
+         * * This must be true
+         * * There must be at least two completed values
+         * * There must not be an actual end date
+         * * Today must be on the chart
+         */
+        showTrend: false,
         
         plotLines: []
     },
@@ -1652,19 +1666,27 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             highcharts_data = this._stripFutureBars(highcharts_data);
         }
         
+        if ( this.showTrend ) {
+            highcharts_data = this._addTrend(highcharts_data);
+        }
+        
         this._addPlotlines(highcharts_data);
-                
+        
+        console.log("Data:", highcharts_data);
+        
         return highcharts_data;
     },
     
     _getDateIndexFromDate: function(highcharts_data, check_date) {
-        var date_iso = Rally.util.DateTime.toIsoString(new Date(check_date));
+        var date_iso = Rally.util.DateTime.toIsoString(new Date(check_date),true).replace(/T.*$/,'');
         var date_index = -1;
-        console.log('_getDateIndexFromDate', date_iso, highcharts_data.categories.length);
+        
+        console.log("Checking date:", check_date, date_iso);
         
         Ext.Array.each(highcharts_data.categories, function(category,idx) {
-            if (category > date_iso && date_index == -1 ) {
-                date_index = idx - 1;
+            
+            if (category >= date_iso && date_index == -1 ) {
+                date_index = idx;
             }
         });
         
@@ -1679,7 +1701,6 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         this.plotLines = [];
         
         var today_index = this._getDateIndexFromDate(data,new Date());
-        // PI
         if ( today_index > -1 ) {
             this.plotLines.push({
                 color: '#000',
@@ -1689,9 +1710,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             });
         }
         
-        
         if ( this.PI && this.PI.PlannedEndDate) {
-            
             var end_date_index = this._getDateIndexFromDate(data, this.PI.PlannedEndDate);
             console.log('today index:', today_index);
             console.log('planned end index:', end_date_index);
@@ -1724,6 +1743,156 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         }
         
         return data;
+    },
+    
+    _getIndexOfFirstNonzeroFromArray:function(data) {
+        var index = -1;
+        Ext.Array.each(data,function(datum,idx){
+            if ( datum > 0 && index == -1 ) {
+                index = idx;
+            }
+        });
+        return index;
+    },
+    
+    _addTrend: function(data) {
+        if ( Ext.isEmpty(this.PI) ) {
+            return data;
+        }
+        
+        var completed_series = [];
+        var scope_series = [];
+        
+        Ext.Array.each( data.series, function(s) {
+            if ( s.name == "Completed" ) {
+                completed_series = s;
+            }
+            if ( s.name == "Planned" ) {
+                scope_series = s;
+            }
+        });
+        
+        var index_of_first_accepted = -1;
+        // is there an actual value today?  
+        var index_of_today = this._getDateIndexFromDate(data,new Date());
+        if ( index_of_today <= 0 ) {
+            // need at least two days of data
+            console.log("Cannot show trend because the chart needs to start before today");
+            return data;
+        }
+        
+        var index_of_first_nonzero = this._getIndexOfFirstNonzeroFromArray(completed_series.data);
+        console.log('indexes (start,today):', index_of_first_nonzero, index_of_today);
+
+        var today_actual = completed_series.data[index_of_today];
+        var first_actual = completed_series.data[index_of_first_nonzero];
+
+        if ( today_actual <= first_actual ) {
+            console.log("There's no slope to show because current actual is less than or equal to first actual");
+            return data;
+        }
+        
+        var slope =  ( today_actual - first_actual ) / ( index_of_today - index_of_first_nonzero ) ;
+        
+        var scope = scope_series.data[index_of_today];
+        
+        var calculation_date_limit = Rally.util.DateTime.add(new Date(), 'year', 2);
+        var trend_date = new Date();
+        var trend_value = today_actual;
+        
+        console.log("Slope:", slope);
+        console.log("Scope:", scope);
+        
+        while ( trend_date < calculation_date_limit && trend_value <= scope ) {
+            trend_date = Rally.util.DateTime.add(trend_date,'day',1);
+            trend_date = this._shiftOffWeekend(trend_date);
+            trend_value = trend_value + slope;
+            console.log('--', trend_date, trend_value);
+        }
+        
+        data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, trend_date, scope);
+        
+        return data;
+    },
+    
+    _shiftOffWeekend: function(check_date) {
+        if (check_date.getDay() == 6) {check_date = Rally.util.DateTime.add(check_date,'day',1);} // Saturday
+        if (check_date.getDay() == 0) {check_date = Rally.util.DateTime.add(check_date,'day',1);} // Sunday
+        
+        return check_date;
+    },
+    
+    _setTrendLineSeries: function(data, index_of_first_nonzero, first_actual, end_date, end_value) {
+        console.log('_setTrendLineSeries', index_of_first_nonzero, first_actual, end_date, end_value);
+        
+        var end_date_iso = Rally.util.DateTime.toIsoString(end_date).replace(/T.*$/,'');
+        var current_chart_end = data.categories[ data.categories.length - 1];
+        
+        if ( current_chart_end < end_date_iso ) {
+            data = this._padDates(data, current_chart_end, end_date);
+        }
+        
+        var index_of_end = this._getDateIndexFromDate(data,end_date);
+        var trend_data = [];
+        
+        for ( var i=0; i<data.categories.length; i++) {
+            if ( i==index_of_end ) { 
+                trend_data.push(end_value); 
+            } else if ( i==index_of_first_nonzero ) { 
+                trend_data.push(first_actual); 
+            } else {
+                trend_data.push(null);
+            }
+        }
+        data.series.push({
+            dashStyle: 'Solid',
+            data: trend_data,
+            name: 'Trend',
+            type: 'line',
+            connectNulls: true
+        });
+        return data;
+        
+    },
+    
+    _padDates: function(data,current_end,new_end_date) {
+        var count_beyond_current = 0;
+        var next_day = Rally.util.DateTime.fromIsoString(current_end);
+        
+        console.log("Adding days from", next_day, " to ", new_end_date);
+        
+        while ( next_day < new_end_date ) {            
+            next_day = Rally.util.DateTime.add(next_day, 'day', 1);
+            next_day = this._shiftOffWeekend(next_day);
+            var next_day_iso = Rally.util.DateTime.toIsoString(next_day).replace(/T.*$/,'');
+            
+            if ( next_day_iso != current_end ) {
+                data.categories.push(next_day_iso);
+                count_beyond_current++;
+            }
+        }
+        
+        var completed_series = [];
+        var scope_series = [];
+        
+        Ext.Array.each( data.series, function(s) {
+            if ( s.name == "Completed" ) {
+                completed_series = s;
+            }
+            if ( s.name == "Planned" ) {
+                scope_series = s;
+            }
+        });
+        
+        var scope = scope_series.data[scope_series.data.length-1];
+        for ( var i=0; i<count_beyond_current; i++ ) {
+            scope_series.data.push(scope);
+            completed_series.data.push(null);
+        }
+        
+        data.series = [scope_series, completed_series];
+        return data;
+        
     }
         
 });
@@ -1784,7 +1953,8 @@ Ext.define("TSPIBurnupWithTrend", {
             workDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
             timeZone: "GMT",
             completedScheduleStateNames: ["Accepted"],
-            hideBarsAfterToday: true
+            hideBarsAfterToday: true,
+            showTrend: true
         },
 
         chartColors: [], // reset so we can define our own palette

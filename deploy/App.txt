@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Oct 14 2015 02:38:46 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Oct 14 2015 06:48:58 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Oct 14 2015 02:38:46 GMT-0700 (PDT)";
-        var CHECKSUM = 60636692776;
+        var APP_BUILD_DATE = "Wed Oct 14 2015 06:48:58 GMT-0700 (PDT)";
+        var CHECKSUM = 62331427659;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1314,7 +1314,7 @@ Ext.define('Rally.technicalservices.Logger',{
             this._updateQueryConfig(portfolioItem);
     
             this.add(this.chartComponentConfig);
-            Rally.environment.getMessageBus().publish(Rally.Message.piChartAppReady);
+            //Rally.environment.getMessageBus().publish(Rally.Message.piChartAppReady);
         },
     
         _setDynamicConfigValues: function (portfolioItem) {
@@ -1546,10 +1546,11 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
          * the day that the app is run.  Defaults to false (show all bars flattened
          * to the right of today).
          */
-        hideBarsAfterToday: false
+        hideBarsAfterToday: false,
+        
+        plotLines: []
     },
-    
-    
+
     getDerivedFieldsOnInput: function () {
         var completedStateNames = this.config.completedScheduleStateNames;
 
@@ -1643,24 +1644,48 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         if ( this.hideBarsAfterToday ) {
             highcharts_data = this._stripFutureBars(highcharts_data);
         }
+        
+        this._addPlotlines(highcharts_data);
+                
         return highcharts_data;
     },
     
-    _stripFutureBars: function(data) {
-        console.log('data', data);
+    _getTodayIndexFromHighChartsData: function(highcharts_data) {
         var today_iso = Rally.util.DateTime.toIsoString(new Date());
         var today_index = -1;
-        Ext.Array.each(data.categories, function(category,idx) {
+        Ext.Array.each(highcharts_data.categories, function(category,idx) {
             if (category > today_iso && today_index == -1 ) {
-                today_index = idx;
+                today_index = idx - 1;
             }
         });
+        
+        return today_index;
+    },
+    
+    _addPlotlines: function(data) {
+        
+        this.plotLines = [];
+        
+        var today_index = this._getTodayIndexFromHighChartsData(data);
+        
+        if ( today_index > -1 ) {
+            this.plotLines.push({
+                color: '#000',
+                label: { text: 'today' },
+                width: 2,
+                value: today_index
+            });
+        }
+    },
+    
+    _stripFutureBars: function(data) {
+        var today_index = this._getTodayIndexFromHighChartsData(data);
         
         if ( today_index > -1 ) {
             Ext.Array.each(data.series, function(series) {
                 if ( series.name == "Completed" ) {
                     Ext.Array.each( series.data, function(datum,idx){
-                        if ( idx >= today_index ) {
+                        if ( idx > today_index ) {
                             series.data[idx] = null;
                         }
                     });
@@ -1698,7 +1723,15 @@ Ext.define("TSPIBurnupWithTrend", {
             if(state !== "Accepted") {
                 this.calculatorConfig.completedScheduleStateNames.push(state);
             }
+            
         },
+        
+        listeners: {
+            snapshotsAggregated: function(c) {
+                c.chartConfig.xAxis.plotLines = c.calculator.plotLines;
+            }
+        },
+
 
         queryErrorMessage: "No data to display.<br /><br />Most likely, stories are either not yet available or started for this portfolio item.",
         aggregationErrorMessage: "No data to display.<br /><br />Check the data type setting for displaying data based on count versus plan estimate.",

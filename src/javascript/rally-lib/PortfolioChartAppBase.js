@@ -231,7 +231,7 @@
             this._updateQueryConfig(portfolioItem);
     
             this.add(this.chartComponentConfig);
-            Rally.environment.getMessageBus().publish(Rally.Message.piChartAppReady);
+            //Rally.environment.getMessageBus().publish(Rally.Message.piChartAppReady);
         },
     
         _setDynamicConfigValues: function (portfolioItem) {

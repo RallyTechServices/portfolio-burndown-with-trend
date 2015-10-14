@@ -8,10 +8,11 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
          * the day that the app is run.  Defaults to false (show all bars flattened
          * to the right of today).
          */
-        hideBarsAfterToday: false
+        hideBarsAfterToday: false,
+        
+        plotLines: []
     },
-    
-    
+
     getDerivedFieldsOnInput: function () {
         var completedStateNames = this.config.completedScheduleStateNames;
 
@@ -105,24 +106,48 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         if ( this.hideBarsAfterToday ) {
             highcharts_data = this._stripFutureBars(highcharts_data);
         }
+        
+        this._addPlotlines(highcharts_data);
+                
         return highcharts_data;
     },
     
-    _stripFutureBars: function(data) {
-        console.log('data', data);
+    _getTodayIndexFromHighChartsData: function(highcharts_data) {
         var today_iso = Rally.util.DateTime.toIsoString(new Date());
         var today_index = -1;
-        Ext.Array.each(data.categories, function(category,idx) {
+        Ext.Array.each(highcharts_data.categories, function(category,idx) {
             if (category > today_iso && today_index == -1 ) {
-                today_index = idx;
+                today_index = idx - 1;
             }
         });
+        
+        return today_index;
+    },
+    
+    _addPlotlines: function(data) {
+        
+        this.plotLines = [];
+        
+        var today_index = this._getTodayIndexFromHighChartsData(data);
+        
+        if ( today_index > -1 ) {
+            this.plotLines.push({
+                color: '#000',
+                label: { text: 'today' },
+                width: 2,
+                value: today_index
+            });
+        }
+    },
+    
+    _stripFutureBars: function(data) {
+        var today_index = this._getTodayIndexFromHighChartsData(data);
         
         if ( today_index > -1 ) {
             Ext.Array.each(data.series, function(series) {
                 if ( series.name == "Completed" ) {
                     Ext.Array.each( series.data, function(datum,idx){
-                        if ( idx >= today_index ) {
+                        if ( idx > today_index ) {
                             series.data[idx] = null;
                         }
                     });

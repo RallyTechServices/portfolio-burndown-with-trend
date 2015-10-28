@@ -33,7 +33,6 @@ Ext.define("TSPIBurnupWithTrend", {
             }
         },
 
-
         queryErrorMessage: "No data to display.<br /><br />Most likely, stories are either not yet available or started for this portfolio item.",
         aggregationErrorMessage: "No data to display.<br /><br />Check the data type setting for displaying data based on count versus plan estimate.",
 

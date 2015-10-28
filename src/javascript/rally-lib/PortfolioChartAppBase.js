@@ -228,6 +228,7 @@
     
             this._setDynamicConfigValues(portfolioItem);
             this._calculateDateRange(portfolioItem);
+
             this._updateQueryConfig(portfolioItem);
     
             this.add(this.chartComponentConfig);
@@ -239,6 +240,8 @@
             this.chartComponentConfig.chartConfig.title = this._buildChartTitle(portfolioItem);
             this.chartComponentConfig.chartConfig.subtitle = this._buildChartSubtitle(portfolioItem);
     
+            this.chartComponentConfig.calculatorConfig.showTrend = this._getShowTrend(portfolioItem);
+            
             this.chartComponentConfig.calculatorConfig.chartAggregationType = this._getAggregationType();
             this.chartComponentConfig.chartConfig.yAxis[0].title.text = this._getYAxisTitle();
     
@@ -246,6 +249,10 @@
                 x: -5,
                 y: 4
             };
+        },
+        
+        _getShowTrend: function(portfolioItem) {
+            return Ext.isEmpty(portfolioItem['ActualEndDate']);
         },
     
         _updateChartConfigDateFormat: function () {

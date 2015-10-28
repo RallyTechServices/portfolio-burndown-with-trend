@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Oct 14 2015 13:43:10 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Oct 28 2015 14:14:55 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Oct 14 2015 13:43:10 GMT-0700 (PDT)";
-        var CHECKSUM = 78997982063;
+        var APP_BUILD_DATE = "Wed Oct 28 2015 14:14:55 GMT-0700 (PDT)";
+        var CHECKSUM = 79700440646;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1311,6 +1311,7 @@ Ext.define('Rally.technicalservices.Logger',{
     
             this._setDynamicConfigValues(portfolioItem);
             this._calculateDateRange(portfolioItem);
+
             this._updateQueryConfig(portfolioItem);
     
             this.add(this.chartComponentConfig);
@@ -1322,6 +1323,8 @@ Ext.define('Rally.technicalservices.Logger',{
             this.chartComponentConfig.chartConfig.title = this._buildChartTitle(portfolioItem);
             this.chartComponentConfig.chartConfig.subtitle = this._buildChartSubtitle(portfolioItem);
     
+            this.chartComponentConfig.calculatorConfig.showTrend = this._getShowTrend(portfolioItem);
+            
             this.chartComponentConfig.calculatorConfig.chartAggregationType = this._getAggregationType();
             this.chartComponentConfig.chartConfig.yAxis[0].title.text = this._getYAxisTitle();
     
@@ -1329,6 +1332,10 @@ Ext.define('Rally.technicalservices.Logger',{
                 x: -5,
                 y: 4
             };
+        },
+        
+        _getShowTrend: function(portfolioItem) {
+            return Ext.isEmpty(portfolioItem['ActualEndDate']);
         },
     
         _updateChartConfigDateFormat: function () {
@@ -1930,7 +1937,6 @@ Ext.define("TSPIBurnupWithTrend", {
                 c.chartConfig.xAxis.plotLines = c.calculator.plotLines;
             }
         },
-
 
         queryErrorMessage: "No data to display.<br /><br />Most likely, stories are either not yet available or started for this portfolio item.",
         aggregationErrorMessage: "No data to display.<br /><br />Check the data type setting for displaying data based on count versus plan estimate.",

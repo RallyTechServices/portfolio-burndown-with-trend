@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Oct 28 2015 14:44:16 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Oct 28 2015 15:29:57 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Oct 28 2015 14:44:16 GMT-0700 (PDT)";
-        var CHECKSUM = 79332420051;
+        var APP_BUILD_DATE = "Wed Oct 28 2015 15:29:57 GMT-0700 (PDT)";
+        var CHECKSUM = 81044439790;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1174,7 +1174,7 @@ Ext.define('Rally.technicalservices.Logger',{
         },
     
         _setDefaultConfigValues: function () {
-            var config = Ext.clone(this.chartComponentConfig);
+            var config = Ext.clone(this.getChartComponentConfig());
     
             config.storeConfig.find = config.storeConfig.find || {};
     
@@ -1427,9 +1427,12 @@ Ext.define('Rally.technicalservices.Logger',{
     
         _buildChartSubtitle: function (portfolioItem) {
             var widthPerCharacter = 6,
-                totalCharacters = Math.floor(this.getWidth() / widthPerCharacter),
+                totalCharacters  = Math.floor(this.getWidth() / widthPerCharacter),
                 plannedStartDate = "",
-                plannedEndDate = "";
+                plannedEndDate   = "",
+                projectedEndDate = "";
+                
+                
     
             var template = Ext.create("Ext.XTemplate",
                 '<tpl if="plannedStartDate">' +
@@ -1444,6 +1447,16 @@ Ext.define('Rally.technicalservices.Logger',{
                     '</tpl>' +
                     '<tpl if="plannedEndDate">' +
                     '    <span>Planned End: {plannedEndDate}</span>' +
+                    '</tpl>' + 
+                    '    <tpl if="projectedEndDate">' +
+                    '        <tpl if="tooBig">' +
+                    '            <br />' +
+                    '        <tpl else>' +
+                    '            &nbsp;&nbsp;&nbsp;' +
+                    '        </tpl>' +
+                    '    </tpl>' +
+                    '<tpl if="projectedEndDate">' +
+                    '    <span>Projected End: {projectedEndDate}</span>' +
                     '</tpl>'
             );
     
@@ -1454,11 +1467,16 @@ Ext.define('Rally.technicalservices.Logger',{
             if (portfolioItem && portfolioItem.PlannedEndDate) {
                 plannedEndDate = this._formatDate(portfolioItem.PlannedEndDate);
             }
+            
+            if (portfolioItem && portfolioItem.ProjectedEndDate) {
+                projectedEndDate = this._formatDate(portfolioItem.ProjectedEndDate);
+            }
     
             var formattedTitle = template.apply({
                 plannedStartDate: plannedStartDate,
                 plannedEndDate: plannedEndDate,
-                tooBig: totalCharacters < plannedStartDate.length + plannedEndDate.length + 60
+                projectedEndDate: projectedEndDate,
+                tooBig: totalCharacters < plannedStartDate.length + plannedEndDate.length + projectedEndDate.length + 60
             });
     
             return {
@@ -1726,10 +1744,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 });
             }
         }
-        
-        console.log('data:', data);
-        console.log('end date:', this.PI.PlannedEndDate);
-        console.log('trend_date:', this.trend_date);
+
         if ( this.trend_date ) {
             var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
             if ( end_date_index > -1 ) {
@@ -1821,6 +1836,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             trend_value = trend_value + slope;
         }
         
+        this.PI.ProjectedEndDate = this.trend_date;
         data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
         
         return data;
@@ -1921,96 +1937,103 @@ Ext.define("TSPIBurnupWithTrend", {
         name : "TS Portfolio Item Burnup with Trend"
     },
 
-    chartComponentConfig: {
-        xtype: "rallychart",
-
-        updateBeforeRender: function() {
-            var length = this.calculatorConfig.scheduleStates.length,
-                state = this.calculatorConfig.scheduleStates[length - 1];
-            if(state !== "Accepted") {
-                this.calculatorConfig.completedScheduleStateNames.push(state);
-            }
+    getChartComponentConfig: function() {
+        var me = this;
+        return {
+            xtype: "rallychart",
+    
+            updateBeforeRender: function() {
+                var length = this.calculatorConfig.scheduleStates.length,
+                    state = this.calculatorConfig.scheduleStates[length - 1];
+                if(state !== "Accepted") {
+                    this.calculatorConfig.completedScheduleStateNames.push(state);
+                }
+                
+            },
             
-        },
-        
-        listeners: {
-            snapshotsAggregated: function(c) {
-                c.chartConfig.xAxis.plotLines = c.calculator.plotLines;
-            }
-        },
-
-        queryErrorMessage: "No data to display.<br /><br />Most likely, stories are either not yet available or started for this portfolio item.",
-        aggregationErrorMessage: "No data to display.<br /><br />Check the data type setting for displaying data based on count versus plan estimate.",
-
-        storeType: 'Rally.data.lookback.SnapshotStore',
-        storeConfig: {
-            find: {
-                "_TypeHierarchy": -51038,
-                "Children": null
-            },
-            fetch: ["ScheduleState", "PlanEstimate"],
-            hydrate: ["ScheduleState"],
-            sort: {
-                "_ValidFrom": 1
-            }
-        },
-
-        calculatorType: "Rally.apps.charts.rpm.burn.BurnCalculator",
-        calculatorConfig: {
-            workDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-            timeZone: "GMT",
-            completedScheduleStateNames: ["Accepted"],
-            hideBarsAfterToday: true,
-            showTrend: true
-        },
-
-        chartColors: [], // reset so we can define our own palette
-
-        chartConfig: {
-            chart: {
-                defaultSeriesType: "area",
-                zoomType: "xy"
-            },
-            xAxis: {
-                categories: [],
-                tickmarkPlacement: "on",
-                tickInterval: 5,
-                title: {
-                    text: "Days",
-                    margin: 10
+            listeners: {
+                snapshotsAggregated: function(c) {
+                    c.chartConfig.xAxis.plotLines = c.calculator.plotLines;
+                    //
+                    me.logger.log('pi:',c.calculator.PI);
+                    c.chartConfig.subtitle =  me._buildChartSubtitle(c.calculator.PI);
+                    
                 }
             },
-            yAxis: [
-                {
+
+            queryErrorMessage: "No data to display.<br /><br />Most likely, stories are either not yet available or started for this portfolio item.",
+            aggregationErrorMessage: "No data to display.<br /><br />Check the data type setting for displaying data based on count versus plan estimate.",
+    
+            storeType: 'Rally.data.lookback.SnapshotStore',
+            storeConfig: {
+                find: {
+                    "_TypeHierarchy": -51038,
+                    "Children": null
+                },
+                fetch: ["ScheduleState", "PlanEstimate"],
+                hydrate: ["ScheduleState"],
+                sort: {
+                    "_ValidFrom": 1
+                }
+            },
+
+            calculatorType: "Rally.apps.charts.rpm.burn.BurnCalculator",
+            calculatorConfig: {
+                workDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                timeZone: "GMT",
+                completedScheduleStateNames: ["Accepted"],
+                hideBarsAfterToday: true,
+                showTrend: true
+            },
+    
+            chartColors: [], // reset so we can define our own palette
+    
+            chartConfig: {
+                chart: {
+                    defaultSeriesType: "area",
+                    zoomType: "xy"
+                },
+                xAxis: {
+                    categories: [],
+                    tickmarkPlacement: "on",
+                    tickInterval: 5,
                     title: {
-                        text: "Count"
+                        text: "Days",
+                        margin: 10
                     }
-                }
-            ],
-            tooltip: {
-                formatter: function () {
-                    return "" + this.x + "<br />" + this.series.name + ": " + this.y;
-                }
-            },
-            plotOptions: {
-                series: {
-                    marker: {
-                        enabled: false,
-                        states: {
-                            hover: {
-                                enabled: true
-                            }
+                },
+                yAxis: [
+                    {
+                        title: {
+                            text: "Count"
                         }
+                    }
+                ],
+                tooltip: {
+                    formatter: function () {
+                        return "" + this.x + "<br />" + this.series.name + ": " + this.y;
+                    }
+                },
+                plotOptions: {
+                    series: {
+                        marker: {
+                            enabled: false,
+                            states: {
+                                hover: {
+                                    enabled: true
+                                }
+                            }
+                        },
+                        groupPadding: 0.01
                     },
-                    groupPadding: 0.01
-                },
-                line: {
-                    color: palette.burnLineColor()
-                },
-                column: {
-                    stacking: null,
-                    color: palette.burnColumnColor(),
-                    shadow: false
+                    line: {
+                        color: palette.burnLineColor()
+                    },
+                    column: {
+                        stacking: null,
+                        color: palette.burnColumnColor(),
+                        shadow: false
+                    }
                 }
             }
         }

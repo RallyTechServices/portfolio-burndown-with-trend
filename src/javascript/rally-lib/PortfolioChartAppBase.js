@@ -91,7 +91,7 @@
         },
     
         _setDefaultConfigValues: function () {
-            var config = Ext.clone(this.chartComponentConfig);
+            var config = Ext.clone(this.getChartComponentConfig());
     
             config.storeConfig.find = config.storeConfig.find || {};
     
@@ -344,9 +344,12 @@
     
         _buildChartSubtitle: function (portfolioItem) {
             var widthPerCharacter = 6,
-                totalCharacters = Math.floor(this.getWidth() / widthPerCharacter),
+                totalCharacters  = Math.floor(this.getWidth() / widthPerCharacter),
                 plannedStartDate = "",
-                plannedEndDate = "";
+                plannedEndDate   = "",
+                projectedEndDate = "";
+                
+                
     
             var template = Ext.create("Ext.XTemplate",
                 '<tpl if="plannedStartDate">' +
@@ -361,6 +364,16 @@
                     '</tpl>' +
                     '<tpl if="plannedEndDate">' +
                     '    <span>Planned End: {plannedEndDate}</span>' +
+                    '</tpl>' + 
+                    '    <tpl if="projectedEndDate">' +
+                    '        <tpl if="tooBig">' +
+                    '            <br />' +
+                    '        <tpl else>' +
+                    '            &nbsp;&nbsp;&nbsp;' +
+                    '        </tpl>' +
+                    '    </tpl>' +
+                    '<tpl if="projectedEndDate">' +
+                    '    <span>Projected End: {projectedEndDate}</span>' +
                     '</tpl>'
             );
     
@@ -371,11 +384,16 @@
             if (portfolioItem && portfolioItem.PlannedEndDate) {
                 plannedEndDate = this._formatDate(portfolioItem.PlannedEndDate);
             }
+            
+            if (portfolioItem && portfolioItem.ProjectedEndDate) {
+                projectedEndDate = this._formatDate(portfolioItem.ProjectedEndDate);
+            }
     
             var formattedTitle = template.apply({
                 plannedStartDate: plannedStartDate,
                 plannedEndDate: plannedEndDate,
-                tooBig: totalCharacters < plannedStartDate.length + plannedEndDate.length + 60
+                projectedEndDate: projectedEndDate,
+                tooBig: totalCharacters < plannedStartDate.length + plannedEndDate.length + projectedEndDate.length + 60
             });
     
             return {

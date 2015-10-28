@@ -181,10 +181,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 });
             }
         }
-        
-        console.log('data:', data);
-        console.log('end date:', this.PI.PlannedEndDate);
-        console.log('trend_date:', this.trend_date);
+
         if ( this.trend_date ) {
             var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
             if ( end_date_index > -1 ) {
@@ -276,6 +273,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             trend_value = trend_value + slope;
         }
         
+        this.PI.ProjectedEndDate = this.trend_date;
         data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
         
         return data;

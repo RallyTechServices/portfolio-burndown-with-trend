@@ -18,7 +18,8 @@ isn't guaranteed.
 ## Development Notes
 
 * Made a switch on the calculator config to decide whether to show after today (only the completion bars).
-* The calculator is determining the plotlines but they're added to the chart using snapshotsAggregated on the rallychart
+* The calculator is determining the plotlines but they're added to the chart using snapshotsAggregated listener on the rallychart
+* An example of grabbing the chart after the fact
 
 
 ### First Load

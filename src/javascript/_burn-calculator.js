@@ -133,18 +133,14 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         }
         
         this._addPlotlines(highcharts_data);
-        
-        console.log("Data:", highcharts_data);
-        
+                
         return highcharts_data;
     },
     
     _getDateIndexFromDate: function(highcharts_data, check_date) {
         var date_iso = Rally.util.DateTime.toIsoString(new Date(check_date),true).replace(/T.*$/,'');
         var date_index = -1;
-        
-        console.log("Checking date:", check_date, date_iso);
-        
+                
         Ext.Array.each(highcharts_data.categories, function(category,idx) {
             
             if (category >= date_iso && date_index == -1 ) {
@@ -173,9 +169,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         }
         
         if ( this.PI && this.PI.PlannedEndDate) {
-            var end_date_index = this._getDateIndexFromDate(data, this.PI.PlannedEndDate);
-            console.log('today index:', today_index);
-            console.log('planned end index:', end_date_index);
+            var end_date_index = this._getDateIndexFromDate(data, Rally.util.DateTime.add( this.PI.PlannedEndDate, 'day', -1 ));
             
             if ( end_date_index > -1 ) {
                 
@@ -184,6 +178,21 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                     label: { text: 'planned end' },
                     width: 2,
                     value: end_date_index
+                });
+            }
+        }
+        
+        console.log('data:', data);
+        console.log('end date:', this.PI.PlannedEndDate);
+        console.log('trend_date:', this.trend_date);
+        if ( this.trend_date ) {
+            var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
+            if ( end_date_index > -1 ) {
+                this.plotLines.push({
+                    color: '#000',
+                    label: { text: 'projected end' },
+                    width: 2,
+                    value: projected_date_index
                 });
             }
         }
@@ -244,7 +253,6 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         }
         
         var index_of_first_nonzero = this._getIndexOfFirstNonzeroFromArray(completed_series.data);
-        console.log('indexes (start,today):', index_of_first_nonzero, index_of_today);
 
         var today_actual = completed_series.data[index_of_today];
         var first_actual = completed_series.data[index_of_first_nonzero];
@@ -259,20 +267,16 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         var scope = scope_series.data[index_of_today];
         
         var calculation_date_limit = Rally.util.DateTime.add(new Date(), 'year', 2);
-        var trend_date = new Date();
+        this.trend_date = new Date();
         var trend_value = today_actual;
         
-        console.log("Slope:", slope);
-        console.log("Scope:", scope);
-        
-        while ( trend_date < calculation_date_limit && trend_value <= scope ) {
-            trend_date = Rally.util.DateTime.add(trend_date,'day',1);
-            trend_date = this._shiftOffWeekend(trend_date);
+        while ( this.trend_date < calculation_date_limit && trend_value <= scope ) {
+            this.trend_date = Rally.util.DateTime.add(this.trend_date,'day',1);
+            this.trend_date = this._shiftOffWeekend(this.trend_date);
             trend_value = trend_value + slope;
-            console.log('--', trend_date, trend_value);
         }
         
-        data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, trend_date, scope);
+        data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
         
         return data;
     },
@@ -285,7 +289,6 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
     },
     
     _setTrendLineSeries: function(data, index_of_first_nonzero, first_actual, end_date, end_value) {
-        console.log('_setTrendLineSeries', index_of_first_nonzero, first_actual, end_date, end_value);
         
         var end_date_iso = Rally.util.DateTime.toIsoString(end_date).replace(/T.*$/,'');
         var current_chart_end = data.categories[ data.categories.length - 1];
@@ -320,9 +323,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
     _padDates: function(data,current_end,new_end_date) {
         var count_beyond_current = 0;
         var next_day = Rally.util.DateTime.fromIsoString(current_end);
-        
-        console.log("Adding days from", next_day, " to ", new_end_date);
-        
+                
         while ( next_day < new_end_date ) {            
             next_day = Rally.util.DateTime.add(next_day, 'day', 1);
             next_day = this._shiftOffWeekend(next_day);

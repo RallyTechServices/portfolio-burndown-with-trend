@@ -149,7 +149,7 @@
         _onButtonClick: function () {
             this._destroyChooser();
 
-            this.dialog = Ext.create("Rally.ui.dialog.ChooserDialog", this.chooserConfig);
+            this.dialog = Ext.create("Rally.ui.dialog.ArtifactChooserDialog", this.chooserConfig);
             this.dialog.show();
         },
 
@@ -163,7 +163,7 @@
             return this.portfolioItem.FormattedID + ': ' + this.portfolioItem.Name;
         },
 
-        _onPortfolioItemChosen: function (resultStore) {
+        _onPortfolioItemChosen: function (dialog,resultStore) {
             this._handleStoreResults(resultStore);
             this._destroyChooser();
         },
@@ -180,6 +180,7 @@
         _configureChooser: function () {
             this.chooserConfig = {
                 artifactTypes: ['portfolioitem'],
+                height: 350,
                 title: 'Choose a Portfolio Item',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',

@@ -15,6 +15,9 @@ end date, and the potential end date
 * Stops showing the burn up after today because that's future information that
 isn't guaranteed.
 
+* Now allows multiple portfolio items.  Start and End dates are taken from those that have those values (earliest of each item for start and latest of each for end).  
+
+
 ## Development Notes
 
 * Made a switch on the calculator config to decide whether to show after today (only the completion bars).

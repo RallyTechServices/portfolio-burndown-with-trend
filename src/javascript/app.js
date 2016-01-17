@@ -33,8 +33,7 @@ Ext.define("TSPIBurnupWithTrend", {
                 snapshotsAggregated: function(c) {
                     c.chartConfig.xAxis.plotLines = c.calculator.plotLines;
                     //
-                    me.logger.log('pi:',c.calculator.PI);
-                    c.chartConfig.subtitle =  me._buildChartSubtitle(c.calculator.PI);
+                    c.chartConfig.subtitle =  me._buildChartSubtitle(c.calculator.PIs || c.calculator.PI, c.calculator);
                     
                 }
             },

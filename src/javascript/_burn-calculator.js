@@ -17,6 +17,9 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
          * 
          */
         PI: null,
+        
+        PIs: null,
+        
         /**
          * 
          * @cfg {Boolean} showTrend
@@ -168,8 +171,18 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             });
         }
         
-        if ( this.PI && this.PI.PlannedEndDate) {
-            var end_date_index = this._getDateIndexFromDate(data, Rally.util.DateTime.add( this.PI.PlannedEndDate, 'day', -1 ));
+        var planned_end_date = null;
+        
+        if ( this.PI && this.PI.PlannedEndDate ) {
+            planned_end_date = PI.PlannedEndDate;
+        }
+        
+        if ( this.PIs && this.PIs.length > 0 ) {
+            planned_end_date =  this._getLatestDate(this.PIs, 'PlannedEndDate');
+        }
+        
+        if ( planned_end_date ) {
+            var end_date_index = this._getDateIndexFromDate(data, Rally.util.DateTime.add( planned_end_date, 'day', -1 ));
             
             if ( end_date_index > -1 ) {
                 
@@ -193,6 +206,20 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 });
             }
         }
+    },
+    
+    _getLatestDate: function(artifacts, field_name){        
+        var chosen_date = null;
+        Ext.Array.each(artifacts, function(artifact) {
+            var artifact_date = artifact[field_name] || artifact.get(field_name);
+            if ( artifact_date ) {
+                if ( !chosen_date || artifact_date > chosen_date ) {
+                    chosen_date = artifact_date;
+                }
+            }
+        });
+        
+        return chosen_date;
     },
     
     _stripFutureBars: function(data) {
@@ -224,10 +251,10 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
     },
     
     _addTrend: function(data) {
-        if ( Ext.isEmpty(this.PI) ) {
+        if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
             return data;
         }
-        
+
         var completed_series = [];
         var scope_series = [];
         
@@ -273,7 +300,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             trend_value = trend_value + slope;
         }
         
-        this.PI.ProjectedEndDate = this.trend_date;
+        //this.PI.ProjectedEndDate = this.trend_date;
         data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
         
         return data;

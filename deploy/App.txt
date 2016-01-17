@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Oct 29 2015 09:36:33 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat Jan 16 2016 20:38:20 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Oct 29 2015 09:36:33 GMT-0700 (PDT)";
-        var CHECKSUM = 81144695928;
+        var APP_BUILD_DATE = "Sat Jan 16 2016 20:38:20 GMT-0800 (PST)";
+        var CHECKSUM = 97496251808;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -396,6 +396,7 @@ Ext.define('Rally.technicalservices.Logger',{
     Ext.define("Rally.apps.charts.settings.SettingsChangeMixin", {
 
         sendSettingsChange: function(artifact) {
+            console.log("changed:", artifact);
             if (this.settingsParent) {
                 this.settingsParent.sendSettingsChange(artifact, this);
             }
@@ -594,14 +595,27 @@ Ext.define('Rally.technicalservices.Logger',{
          * @Override from SettingsChangeMixin
          * Updates child components when a new portfolio item is chosen.
          */
-        receiveSettingsChange: function (artifact) {
-            if (artifact) {
+        receiveSettingsChange: function (artifact) {            
+            if (artifact && !Ext.isArray(artifact)) {
                 this._enableRadioGroups();
                 this._updateRadioLabel(this.actualStartDate, artifact.ActualStartDate);
                 this._updateRadioLabel(this.plannedStartDate, artifact.PlannedStartDate);
                 this._updateRadioLabel(this.actualEndDate, artifact.ActualEndDate);
                 this._updateRadioLabel(this.plannedEndDate, artifact.PlannedEndDate);
+                this._setDefaultValues();            
+            } else if ( Ext.isArray(artifact) && artifact.length > 0 ) {
+                this._enableRadioGroups();
+                var actual_start = this._getEarliestDate(artifact, 'ActualStartDate');
+                var actual_end = this._getLatestDate(artifact, 'ActualEndDate');
+                var planned_start = this._getEarliestDate(artifact, 'PlannedStartDate');
+                var planned_end =  this._getLatestDate(artifact, 'PlannedEndDate');
+                
+                this._updateRadioLabel(this.actualStartDate, actual_start);
+                this._updateRadioLabel(this.plannedStartDate, planned_start);
+                this._updateRadioLabel(this.actualEndDate, actual_end);
+                this._updateRadioLabel(this.plannedEndDate, planned_end);
                 this._setDefaultValues();
+            
             }
         },
 
@@ -617,6 +631,34 @@ Ext.define('Rally.technicalservices.Logger',{
             this._loadSavedSettingsIntoComponent(this.endDateGroup);
         },
 
+        _getEarliestDate: function(artifacts, field_name){
+            var chosen_date = null;
+            Ext.Array.each(artifacts, function(artifact) {
+                var artifact_date = artifact[field_name];
+                if ( artifact_date ) {
+                    if ( !chosen_date || artifact_date < chosen_date ) {
+                        chosen_date = artifact_date;
+                    }
+                }
+            });
+            
+            return chosen_date;
+        },
+
+        _getLatestDate: function(artifacts, field_name){
+            var chosen_date = null;
+            Ext.Array.each(artifacts, function(artifact) {
+                var artifact_date = artifact[field_name];
+                if ( artifact_date ) {
+                    if ( !chosen_date || artifact_date > chosen_date ) {
+                        chosen_date = artifact_date;
+                    }
+                }
+            });
+            
+            return chosen_date;
+        },
+        
         selectCustomDateRadioOption: function (cmp) {
             var value = {};
             value[cmp.name] = "selecteddate";
@@ -875,7 +917,6 @@ Ext.define('Rally.technicalservices.Logger',{
             this._setValueFromSettings();
             this._setupRequestContext();
             this._loadPortfolioItem();
-            this._configureChooser();
         },
 
         _setupRequestContext: function () {
@@ -943,7 +984,7 @@ Ext.define('Rally.technicalservices.Logger',{
         _onButtonClick: function () {
             this._destroyChooser();
 
-            this.dialog = Ext.create("Rally.ui.dialog.ArtifactChooserDialog", this.chooserConfig);
+            this.dialog = Ext.create("Rally.ui.dialog.ArtifactChooserDialog", this._getChooserConfig());
             this.dialog.show();
         },
 
@@ -954,6 +995,12 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         _getPortfolioItemDisplay: function () {
+            if ( this.portfolioItems && Ext.isArray(this.portfolioItems) ) {
+                if ( this.portfolioItems.length == 1 ) {
+                    return this.portfolioItems[0].FormattedID + ': ' + this.portfolioItems[0].Name;
+                }
+                return Ext.Array.map(this.portfolioItems, function(pi) { return pi.FormattedID; }).join(',');
+            }
             return this.portfolioItem.FormattedID + ': ' + this.portfolioItem.Name;
         },
 
@@ -963,21 +1010,36 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         _handleStoreResults: function(store) {
-            if (store && store.data) {
-                this.portfolioItem = store.data;
-                this._setDisplayValue();
-                this.setValue(this.portfolioItem._ref);
-                this.sendSettingsChange(this.portfolioItem);
+            console.log('_handleStoreResults', store);
+            
+            if (store) {
+                if ( Ext.isArray(store) ) {
+
+                    this.portfolioItems = Ext.Array.map(store, function(pi) { return pi.getData(); });
+                    this.portfolioItemRefs = Ext.Array.map(store, function(pi) { return pi.get('_ref'); });
+                    
+                    this._setDisplayValue();
+                    this.setValue(this.portfolioItemRefs);
+                    this.sendSettingsChange(this.portfolioItems);
+                } else if (store.data) {
+                    this.portfolioItem = store.data;
+                    this._setDisplayValue();
+                    this.setValue(this.portfolioItem._ref);
+                    this.sendSettingsChange(this.portfolioItem);
+                }
             }
         },
 
-        _configureChooser: function () {
-            this.chooserConfig = {
+        _getChooserConfig: function () {
+            console.log('open chooser', this.value);
+            return {
                 artifactTypes: ['portfolioitem'],
+                multiple: true,
                 height: 350,
                 title: 'Choose a Portfolio Item',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',
+                selectedRecords: this.value,
                 listeners: {
                     artifactChosen: this._onPortfolioItemChosen,
                     scope: this
@@ -996,7 +1058,12 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         setValue: function (value) {
+            console.log('set value', value);
+            
             if (value && value !== "undefined") {
+                if ( Ext.isString(value) ) {
+                    value = value.split(',');
+                }
                 this.value = value;
             }
             else {
@@ -1005,9 +1072,14 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         getSubmitData: function () {
+            console.log("getSubmitData");
             var returnObject = {};
 
-            if (this.portfolioItem) {
+            if ( this.portfolioItemRefs && Ext.isArray(this.portfolioItemRefs) ) {
+                this.setValue(this.portfolioItemRefs);
+                returnObject.portfolioItemPicker = this.portfolioItemRefs;                
+            } else if (this.portfolioItem) {
+
                 this.setValue(this.portfolioItem._ref);
                 returnObject.portfolioItemPicker = this.portfolioItem._ref;
             }
@@ -1015,6 +1087,7 @@ Ext.define('Rally.technicalservices.Logger',{
                 returnObject.portfolioItemPicker = "";
             }
 
+            console.log('returning', returnObject);
             return returnObject;
         }
     });
@@ -1117,7 +1190,7 @@ Ext.define('Rally.technicalservices.Logger',{
         },
     
         getSettingsFields: function () {
-            return this.chartSettings.getSettingsConfiguration();
+            return this.chartSettings && this.chartSettings.getSettingsConfiguration();
         },
     
         clientMetrics: {
@@ -1127,6 +1200,8 @@ Ext.define('Rally.technicalservices.Logger',{
         },
     
         launch: function () {
+            this.logger.log('launch');
+            
             this._setupEvents();
     
             this._setupChartSettings();
@@ -1134,7 +1209,7 @@ Ext.define('Rally.technicalservices.Logger',{
             this._setDefaultConfigValues();
             this._setupUpdateBeforeRender();
     
-            this._loadSavedPortfolioItem();
+            this._loadSavedPortfolioItems();
             Ext.create('Rally.apps.charts.IntegrationHeaders',this).applyTo(this.chartComponentConfig.storeConfig);
         },
     
@@ -1195,7 +1270,7 @@ Ext.define('Rally.technicalservices.Logger',{
         },
     
     
-        _loadSavedPortfolioItem: function () {
+        _loadSavedPortfolioItems: function () {
             if (!this._validateSettingsChoices()) {
                 // force pop up the settings
                 
@@ -1205,16 +1280,21 @@ Ext.define('Rally.technicalservices.Logger',{
                 return this.showSettings();
             }
     
-            var portfolioItemRef = this.getSetting(this.PI_SETTING);
+            var portfolioItemRefs = this.getSetting(this.PI_SETTING);
+            
+            if ( Ext.isString(portfolioItemRefs) ) { 
+                portfolioItemRefs = portfolioItemRefs.split(',');
+            }
+            
+            var filter_array = [{ property: 'ObjectID', value: -1 }];
+            Ext.Array.each(portfolioItemRefs, function(ref) {
+                filter_array.push({property:'ObjectID', value: Rally.util.Ref.getOidFromRef(ref)});
+            });
+            
+            
             var store = Ext.create("Rally.data.wsapi.Store", {
                 model: Ext.identityFn("Portfolio Item"),
-                filters: [
-                    {
-                        property: "ObjectID",
-                        operator: "=",
-                        value: Rally.util.Ref.getOidFromRef(portfolioItemRef)
-                    }
-                ],
+                filters: Rally.data.wsapi.Filter.or(filter_array),
                 context: {
                     workspace: this.getContext().getWorkspaceRef(),
                     project: null
@@ -1222,12 +1302,40 @@ Ext.define('Rally.technicalservices.Logger',{
                 scope: this
             });
     
-            store.on('load', this._onPortfolioItemRetrieved, this);
+            store.on('load', this._onPortfolioItemsRetrieved, this);
             store.load();
         },
-    
+
+        _getEarliestDate: function(artifacts, field_name){            
+            var chosen_date = null;
+            Ext.Array.each(artifacts, function(artifact) {
+                var artifact_date = artifact[field_name] || artifact.get(field_name);
+                if ( artifact_date ) {
+                    if ( !chosen_date || artifact_date < chosen_date ) {
+                        chosen_date = artifact_date;
+                    }
+                }
+            });
+            
+            return chosen_date;
+        },
+
+        _getLatestDate: function(artifacts, field_name){
+            var chosen_date = null;
+            Ext.Array.each(artifacts, function(artifact) {
+                var artifact_date = artifact[field_name] || artifact.get(field_name);
+                if ( artifact_date ) {
+                    if ( !chosen_date || artifact_date > chosen_date ) {
+                        chosen_date = artifact_date;
+                    }
+                }
+            });
+            
+            return chosen_date;
+        },
+        
         _validateSettingsChoices: function () {
-            this.logger.log('_validateSettingsChoices');
+            this.logger.log('_validateSettingsChoices', this.getSettings());
             var piRef = this._getSettingPortfolioItem(),
                 startDate = this._getSettingStartDate(),
                 endDate = this._getSettingEndDate(),
@@ -1247,8 +1355,6 @@ Ext.define('Rally.technicalservices.Logger',{
          * when running internally, the setting of arrays is sometimes stored as strings
          */
         _getSettingStartDate: function() {
-            this.logger.log('startdate setting:', this.getSetting('startdate'));
-            this.logger.log('settings:', this.getSettings());
             var start_date = this.getSetting("startdate") || this.getSetting("startDate");
             if ( Ext.isArray(start_date) ) {
                 start_date = start_date.join(',');
@@ -1282,22 +1388,19 @@ Ext.define('Rally.technicalservices.Logger',{
             return !!(savedPi && savedPi._type && savedPi.ObjectID && savedPi.Name);
         },
     
-        _onPortfolioItemRetrieved: function (store) {
-            this.logger.log('_onPortfolioItemRetrieved', store);
-            
-            var storeData = store.getAt(0),
-                portfolioItemRecord = storeData.data;
+        _onPortfolioItemsRetrieved: function (store, piRecords) {
+            this.logger.log('_onPortfolioItemsRetrieved', store, piRecords);
     
-            if (!this._savedPortfolioItemValid(portfolioItemRecord)) {
-                this._portfolioItemNotValid();
-                return;
-            }
+//            if (!this._savedPortfolioItemValid(portfolioItemRecord)) {
+//                this._portfolioItemNotValid();
+//                return;
+//            }
     
-            if (portfolioItemRecord) {
+            if (piRecords.length > 0) {
                 Rally.data.ModelFactory.getModel({
                     type: 'UserStory',
                     success: function (model) {
-                        this._onUserStoryModelRetrieved(model, portfolioItemRecord);
+                        this._onUserStoryModelRetrieved(model, piRecords);
                     },
                     scope: this
                 });
@@ -1306,25 +1409,24 @@ Ext.define('Rally.technicalservices.Logger',{
             }
         },
     
-        _onUserStoryModelRetrieved: function (model, portfolioItem) {
+        _onUserStoryModelRetrieved: function (model, portfolioItems) {
             var scheduleStateValues = model.getField('ScheduleState').getAllowedStringValues();
             this.chartComponentConfig.calculatorConfig.scheduleStates = scheduleStateValues;
     
-            this._setDynamicConfigValues(portfolioItem);
-            this._calculateDateRange(portfolioItem);
+            this._setDynamicConfigValues(portfolioItems);
+            this._calculateDateRange(portfolioItems);
 
-            this._updateQueryConfig(portfolioItem);
+            this._updateQueryConfig(portfolioItems);
     
             this.add(this.chartComponentConfig);
-            //Rally.environment.getMessageBus().publish(Rally.Message.piChartAppReady);
         },
     
-        _setDynamicConfigValues: function (portfolioItem) {
+        _setDynamicConfigValues: function (portfolioItems) {
             this._updateChartConfigDateFormat();
-            this.chartComponentConfig.chartConfig.title = this._buildChartTitle(portfolioItem);
-            this.chartComponentConfig.chartConfig.subtitle = this._buildChartSubtitle(portfolioItem);
+            this.chartComponentConfig.chartConfig.title =    this._buildChartTitle(portfolioItems);
+            this.chartComponentConfig.chartConfig.subtitle = this._buildChartSubtitle(portfolioItems);
     
-            this.chartComponentConfig.calculatorConfig.showTrend = this._getShowTrend(portfolioItem);
+            this.chartComponentConfig.calculatorConfig.showTrend = this._getShowTrend(portfolioItems);
             
             this.chartComponentConfig.calculatorConfig.chartAggregationType = this._getAggregationType();
             this.chartComponentConfig.chartConfig.yAxis[0].title.text = this._getYAxisTitle();
@@ -1335,8 +1437,9 @@ Ext.define('Rally.technicalservices.Logger',{
             };
         },
         
-        _getShowTrend: function(portfolioItem) {
-            return Ext.isEmpty(portfolioItem['ActualEndDate']);
+        _getShowTrend: function(portfolioItems) {            
+            var actual_start = this._getEarliestDate(portfolioItems, 'ActualStartDate');            
+            return !Ext.isEmpty(actual_start);
         },
     
         _updateChartConfigDateFormat: function () {
@@ -1362,7 +1465,6 @@ Ext.define('Rally.technicalservices.Logger',{
         },
     
         _formatDate: function (date) {
-            
             if (!this.dateFormat) {
                 this.dateFormat = this._parseRallyDateFormatToHighchartsDateFormat();
             }
@@ -1370,17 +1472,19 @@ Ext.define('Rally.technicalservices.Logger',{
             return Highcharts.dateFormat(this.dateFormat, date.getTime());
         },
     
-        _calculateDateRange: function (portfolioItem) {
+        _calculateDateRange: function (portfolioItems) {
             var calcConfig = this.chartComponentConfig.calculatorConfig;
-            calcConfig.startDate = calcConfig.startDate || this._getChartStartDate(portfolioItem);
-            calcConfig.endDate = calcConfig.endDate || this._getChartEndDate(portfolioItem);
+            calcConfig.startDate = calcConfig.startDate || this._getChartStartDate(portfolioItems);
+            calcConfig.endDate = calcConfig.endDate || this._getChartEndDate(portfolioItems);
             calcConfig.timeZone = calcConfig.timeZone || this._getTimeZone();
-            calcConfig.PI = portfolioItem;
+            calcConfig.PIs = portfolioItems;
             this.chartComponentConfig.chartConfig.xAxis.tickInterval = this._configureChartTicks(calcConfig.startDate, calcConfig.endDate);
         },
     
-        _updateQueryConfig: function (portfolioItem) {
-            this.chartComponentConfig.storeConfig.find._ItemHierarchy = portfolioItem.ObjectID;
+        _updateQueryConfig: function (portfolioItems) {
+            var oids = Ext.Array.map(portfolioItems, function(pi) { return pi.get('ObjectID'); });
+            
+            this.chartComponentConfig.storeConfig.find._ItemHierarchy = { '$in': oids };
         },
     
         _configureChartTicks: function (startDate, endDate) {
@@ -1404,14 +1508,18 @@ Ext.define('Rally.technicalservices.Logger',{
             return this.getContext().getWorkspace().WorkspaceConfiguration.DateFormat;
         },
     
-        _buildChartTitle: function (portfolioItem) {
+        _buildChartTitle: function (portfolioItems) {            
             var widthPerCharacter = 10,
                 totalCharacters = Math.floor(this.getWidth() / widthPerCharacter),
                 title = "Portfolio Item Chart",
                 align = "center";
     
-            if (portfolioItem) {
-                title = portfolioItem.FormattedID + ": " + portfolioItem.Name;
+            if (portfolioItems) {
+                if ( portfolioItems.length == 1 ) {
+                    title = portfolioItems[0].get('FormattedID') + ": " + portfolioItems[0].get('Name');
+                } else if ( portfolioItems.length > 1 ) {
+                    title = Ext.Array.map(portfolioItems, function(pi) { return pi.get('FormattedID'); }).join(',');
+                }
             }
     
             if (totalCharacters < title.length) {
@@ -1426,15 +1534,13 @@ Ext.define('Rally.technicalservices.Logger',{
             };
         },
     
-        _buildChartSubtitle: function (portfolioItem) {
+        _buildChartSubtitle: function (portfolioItems,calculator) {            
             var widthPerCharacter = 6,
                 totalCharacters  = Math.floor(this.getWidth() / widthPerCharacter),
                 plannedStartDate = "",
                 plannedEndDate   = "",
                 projectedEndDate = "";
                 
-                
-    
             var template = Ext.create("Ext.XTemplate",
                 '<tpl if="plannedStartDate">' +
                     '<span>Planned Start: {plannedStartDate}</span>' +
@@ -1461,25 +1567,33 @@ Ext.define('Rally.technicalservices.Logger',{
                     '</tpl>'
             );
     
-            if (portfolioItem && portfolioItem.PlannedStartDate) {
-                plannedStartDate = this._formatDate(portfolioItem.PlannedStartDate);
+            var actual_start = this._getEarliestDate(portfolioItems, 'ActualStartDate');
+            var actual_end = this._getLatestDate(portfolioItems, 'ActualEndDate');
+            var planned_start = this._getEarliestDate(portfolioItems, 'PlannedStartDate');
+            var planned_end =  this._getLatestDate(portfolioItems, 'PlannedEndDate');
+                
+            if (planned_start) {
+                plannedStartDate = this._formatDate(planned_start);
             }
     
-            if (portfolioItem && portfolioItem.PlannedEndDate) {
-                plannedEndDate = this._formatDate(portfolioItem.PlannedEndDate);
+            if (planned_end) {
+                plannedEndDate = this._formatDate(planned_end);
             }
             
-            if (portfolioItem && portfolioItem.ProjectedEndDate) {
-                projectedEndDate = this._formatDate(portfolioItem.ProjectedEndDate);
+            if ( calculator && calculator.trend_date ) {
+//            if (portfolioItem && portfolioItem.ProjectedEndDate) {
+                projectedEndDate = this._formatDate(calculator.trend_date);
             }
-    
-            var formattedTitle = template.apply({
+            
+            var title_data = {
                 plannedStartDate: plannedStartDate,
                 plannedEndDate: plannedEndDate,
                 projectedEndDate: projectedEndDate,
                 tooBig: totalCharacters < plannedStartDate.length + plannedEndDate.length + projectedEndDate.length + 60
-            });
+            };
     
+            var formattedTitle = template.apply(title_data);
+                
             return {
                 text: formattedTitle,
                 useHTML: true,
@@ -1497,21 +1611,21 @@ Ext.define('Rally.technicalservices.Logger',{
                 "Count";
         },
     
-        _getChartStartDate: function (portfolioItem) {
+        _getChartStartDate: function (portfolioItems) {
             var startDateSetting = this._getSettingStartDate().split(","),
                 settingValue = startDateSetting[0],
                 startDate;
     
             if(startDateSetting[0] === "selecteddate") {
                 startDate = this.dateStringToObject(startDateSetting[1]);
-            } else {
-                startDate = this._dateFromSettingValue(portfolioItem, settingValue);
+            } else {                
+                startDate = this._dateFromSettingValue(portfolioItems, settingValue);
             }
     
             return this.dateToString(startDate);
         },
     
-        _getChartEndDate: function (portfolioItem) {
+        _getChartEndDate: function (portfolioItems) {
             var endDateSetting = this._getSettingEndDate().split(","),
                 settingValue = endDateSetting[0],
                 endDate;
@@ -1519,26 +1633,26 @@ Ext.define('Rally.technicalservices.Logger',{
             if (endDateSetting[0] === "selecteddate") {
                 endDate = this.dateStringToObject(endDateSetting[1]);
             } else {
-                endDate = this._dateFromSettingValue(portfolioItem, settingValue);
+                endDate = this._dateFromSettingValue(portfolioItems, settingValue);
             }
     
             return this.dateToString(endDate);
         },
     
-        _dateFromSettingValue: function (portfolioItem, settingValue) {
-            var settingsMap = {
-                "plannedstartdate": "PlannedStartDate",
-                "plannedenddate": "PlannedEndDate",
-                "actualstartdate": "ActualStartDate",
-                "actualenddate": "ActualEndDate"
-            };
-    
+        _dateFromSettingValue: function (portfolioItems, settingValue) {
             if (settingValue === "today") {
                 return new Date();
             }
-    
+            
+            var settingsMap = {
+                "plannedstartdate": this._getEarliestDate(portfolioItems, 'PlannedStartDate'),
+                "plannedenddate": this._getLatestDate(portfolioItems, 'PlannedEndDate'),
+                "actualstartdate": this._getEarliestDate(portfolioItems, 'ActualStartDate'),
+                "actualenddate": this._getLatestDate(portfolioItems, 'ActualEndDate')
+            };
+
             if (settingsMap.hasOwnProperty(settingValue)) {
-                return portfolioItem[settingsMap[settingValue]];
+                return settingsMap[settingValue];
             }
     
             return new Date(settingValue);
@@ -1581,6 +1695,9 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
          * 
          */
         PI: null,
+        
+        PIs: null,
+        
         /**
          * 
          * @cfg {Boolean} showTrend
@@ -1732,8 +1849,18 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             });
         }
         
-        if ( this.PI && this.PI.PlannedEndDate) {
-            var end_date_index = this._getDateIndexFromDate(data, Rally.util.DateTime.add( this.PI.PlannedEndDate, 'day', -1 ));
+        var planned_end_date = null;
+        
+        if ( this.PI && this.PI.PlannedEndDate ) {
+            planned_end_date = PI.PlannedEndDate;
+        }
+        
+        if ( this.PIs && this.PIs.length > 0 ) {
+            planned_end_date =  this._getLatestDate(this.PIs, 'PlannedEndDate');
+        }
+        
+        if ( planned_end_date ) {
+            var end_date_index = this._getDateIndexFromDate(data, Rally.util.DateTime.add( planned_end_date, 'day', -1 ));
             
             if ( end_date_index > -1 ) {
                 
@@ -1757,6 +1884,20 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 });
             }
         }
+    },
+    
+    _getLatestDate: function(artifacts, field_name){        
+        var chosen_date = null;
+        Ext.Array.each(artifacts, function(artifact) {
+            var artifact_date = artifact[field_name] || artifact.get(field_name);
+            if ( artifact_date ) {
+                if ( !chosen_date || artifact_date > chosen_date ) {
+                    chosen_date = artifact_date;
+                }
+            }
+        });
+        
+        return chosen_date;
     },
     
     _stripFutureBars: function(data) {
@@ -1788,10 +1929,10 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
     },
     
     _addTrend: function(data) {
-        if ( Ext.isEmpty(this.PI) ) {
+        if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
             return data;
         }
-        
+
         var completed_series = [];
         var scope_series = [];
         
@@ -1837,7 +1978,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
             trend_value = trend_value + slope;
         }
         
-        this.PI.ProjectedEndDate = this.trend_date;
+        //this.PI.ProjectedEndDate = this.trend_date;
         data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
         
         return data;
@@ -1956,8 +2097,7 @@ Ext.define("TSPIBurnupWithTrend", {
                 snapshotsAggregated: function(c) {
                     c.chartConfig.xAxis.plotLines = c.calculator.plotLines;
                     //
-                    me.logger.log('pi:',c.calculator.PI);
-                    c.chartConfig.subtitle =  me._buildChartSubtitle(c.calculator.PI);
+                    c.chartConfig.subtitle =  me._buildChartSubtitle(c.calculator.PIs || c.calculator.PI, c.calculator);
                     
                 }
             },

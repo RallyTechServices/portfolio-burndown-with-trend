@@ -81,7 +81,6 @@
             this._setValueFromSettings();
             this._setupRequestContext();
             this._loadPortfolioItem();
-            this._configureChooser();
         },
 
         _setupRequestContext: function () {
@@ -149,7 +148,7 @@
         _onButtonClick: function () {
             this._destroyChooser();
 
-            this.dialog = Ext.create("Rally.ui.dialog.ArtifactChooserDialog", this.chooserConfig);
+            this.dialog = Ext.create("Rally.ui.dialog.ArtifactChooserDialog", this._getChooserConfig());
             this.dialog.show();
         },
 
@@ -160,6 +159,12 @@
         },
 
         _getPortfolioItemDisplay: function () {
+            if ( this.portfolioItems && Ext.isArray(this.portfolioItems) ) {
+                if ( this.portfolioItems.length == 1 ) {
+                    return this.portfolioItems[0].FormattedID + ': ' + this.portfolioItems[0].Name;
+                }
+                return Ext.Array.map(this.portfolioItems, function(pi) { return pi.FormattedID; }).join(',');
+            }
             return this.portfolioItem.FormattedID + ': ' + this.portfolioItem.Name;
         },
 
@@ -169,21 +174,36 @@
         },
 
         _handleStoreResults: function(store) {
-            if (store && store.data) {
-                this.portfolioItem = store.data;
-                this._setDisplayValue();
-                this.setValue(this.portfolioItem._ref);
-                this.sendSettingsChange(this.portfolioItem);
+            console.log('_handleStoreResults', store);
+            
+            if (store) {
+                if ( Ext.isArray(store) ) {
+
+                    this.portfolioItems = Ext.Array.map(store, function(pi) { return pi.getData(); });
+                    this.portfolioItemRefs = Ext.Array.map(store, function(pi) { return pi.get('_ref'); });
+                    
+                    this._setDisplayValue();
+                    this.setValue(this.portfolioItemRefs);
+                    this.sendSettingsChange(this.portfolioItems);
+                } else if (store.data) {
+                    this.portfolioItem = store.data;
+                    this._setDisplayValue();
+                    this.setValue(this.portfolioItem._ref);
+                    this.sendSettingsChange(this.portfolioItem);
+                }
             }
         },
 
-        _configureChooser: function () {
-            this.chooserConfig = {
+        _getChooserConfig: function () {
+            console.log('open chooser', this.value);
+            return {
                 artifactTypes: ['portfolioitem'],
+                multiple: true,
                 height: 350,
                 title: 'Choose a Portfolio Item',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',
+                selectedRecords: this.value,
                 listeners: {
                     artifactChosen: this._onPortfolioItemChosen,
                     scope: this
@@ -202,7 +222,12 @@
         },
 
         setValue: function (value) {
+            console.log('set value', value);
+            
             if (value && value !== "undefined") {
+                if ( Ext.isString(value) ) {
+                    value = value.split(',');
+                }
                 this.value = value;
             }
             else {
@@ -211,9 +236,14 @@
         },
 
         getSubmitData: function () {
+            console.log("getSubmitData");
             var returnObject = {};
 
-            if (this.portfolioItem) {
+            if ( this.portfolioItemRefs && Ext.isArray(this.portfolioItemRefs) ) {
+                this.setValue(this.portfolioItemRefs);
+                returnObject.portfolioItemPicker = this.portfolioItemRefs;                
+            } else if (this.portfolioItem) {
+
                 this.setValue(this.portfolioItem._ref);
                 returnObject.portfolioItemPicker = this.portfolioItem._ref;
             }
@@ -221,6 +251,7 @@
                 returnObject.portfolioItemPicker = "";
             }
 
+            console.log('returning', returnObject);
             return returnObject;
         }
     });

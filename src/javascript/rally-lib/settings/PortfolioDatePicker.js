@@ -144,14 +144,27 @@
          * @Override from SettingsChangeMixin
          * Updates child components when a new portfolio item is chosen.
          */
-        receiveSettingsChange: function (artifact) {
-            if (artifact) {
+        receiveSettingsChange: function (artifact) {            
+            if (artifact && !Ext.isArray(artifact)) {
                 this._enableRadioGroups();
                 this._updateRadioLabel(this.actualStartDate, artifact.ActualStartDate);
                 this._updateRadioLabel(this.plannedStartDate, artifact.PlannedStartDate);
                 this._updateRadioLabel(this.actualEndDate, artifact.ActualEndDate);
                 this._updateRadioLabel(this.plannedEndDate, artifact.PlannedEndDate);
+                this._setDefaultValues();            
+            } else if ( Ext.isArray(artifact) && artifact.length > 0 ) {
+                this._enableRadioGroups();
+                var actual_start = this._getEarliestDate(artifact, 'ActualStartDate');
+                var actual_end = this._getLatestDate(artifact, 'ActualEndDate');
+                var planned_start = this._getEarliestDate(artifact, 'PlannedStartDate');
+                var planned_end =  this._getLatestDate(artifact, 'PlannedEndDate');
+                
+                this._updateRadioLabel(this.actualStartDate, actual_start);
+                this._updateRadioLabel(this.plannedStartDate, planned_start);
+                this._updateRadioLabel(this.actualEndDate, actual_end);
+                this._updateRadioLabel(this.plannedEndDate, planned_end);
                 this._setDefaultValues();
+            
             }
         },
 
@@ -167,6 +180,34 @@
             this._loadSavedSettingsIntoComponent(this.endDateGroup);
         },
 
+        _getEarliestDate: function(artifacts, field_name){
+            var chosen_date = null;
+            Ext.Array.each(artifacts, function(artifact) {
+                var artifact_date = artifact[field_name];
+                if ( artifact_date ) {
+                    if ( !chosen_date || artifact_date < chosen_date ) {
+                        chosen_date = artifact_date;
+                    }
+                }
+            });
+            
+            return chosen_date;
+        },
+
+        _getLatestDate: function(artifacts, field_name){
+            var chosen_date = null;
+            Ext.Array.each(artifacts, function(artifact) {
+                var artifact_date = artifact[field_name];
+                if ( artifact_date ) {
+                    if ( !chosen_date || artifact_date > chosen_date ) {
+                        chosen_date = artifact_date;
+                    }
+                }
+            });
+            
+            return chosen_date;
+        },
+        
         selectCustomDateRadioOption: function (cmp) {
             var value = {};
             value[cmp.name] = "selecteddate";

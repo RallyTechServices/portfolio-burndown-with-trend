@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat Jan 16 2016 20:38:20 GMT-0800 (PST) -->
+    <!--  Build Date: Wed Jan 20 2016 19:43:55 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat Jan 16 2016 20:38:20 GMT-0800 (PST)";
-        var CHECKSUM = 97496251808;
+        var APP_BUILD_DATE = "Wed Jan 20 2016 19:43:55 GMT-0800 (PST)";
+        var CHECKSUM = 99091378168;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1874,8 +1874,18 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         }
 
         if ( this.trend_date ) {
+            
+            var show_line = true;
+            if ( planned_end_date && Math.abs(Rally.util.DateTime.getDifference(this.trend_date, planned_end_date, 'day')) < 4 ) {
+                show_line = false;
+            }
+            
+            console.log('--', Math.abs(Rally.util.DateTime.getDifference(this.trend_date, planned_end_date, 'day')));
             var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
-            if ( end_date_index > -1 ) {
+            console.log('trend date/projected index', this.trend_date, projected_date_index);
+            console.log('planned', planned_end_date);
+            
+            if ( end_date_index > -1 && show_line ) {
                 this.plotLines.push({
                     color: '#000',
                     label: { text: 'projected end' },

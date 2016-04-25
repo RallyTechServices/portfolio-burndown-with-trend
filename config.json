@@ -5,8 +5,8 @@
     "sdk": "2.0",
     "apiKey": "_PUT_APIKEY_HERE_",
     "javascript": [
-      "__ts-info-link.js",
-      "__ts-logger.js",
+      "utils/__ts-info-link.js",
+      "utils/__ts-logger.js",
       "rally-lib/Colors.js",
       "rally-lib/DateMixin.js",
       "rally-lib/IntegrationHeaders.js",

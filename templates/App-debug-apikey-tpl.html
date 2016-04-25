@@ -6,7 +6,7 @@
         var APP_BUILD_DATE = "<%= new Date() %>";
     </script>
     
-    <script type="text/javascript" src="<%= auth.server %>/apps/<%= sdk %>/sdk-debug.js"></script>
+    <script type="text/javascript" src="<%= auth.server %>/apps/<%= sdk %>/sdk-debug.js?apiKey=<%= auth.apiKey %>"></script>
 
     <script type="text/javascript">
         Rally.onReady(function() {

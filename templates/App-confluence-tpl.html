@@ -1,14 +1,14 @@
 <!-- for confluence, the head/body tags interfere with rendering -->
 
     <title><%= name %></title>
-    <!--  (c) 2014,2015 Rally Software Development Corp.  All Rights Reserved. -->
+    <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
     <!--  Build Date: <%= new Date() %> -->
     
     <script type="text/javascript">
         var APP_BUILD_DATE = "<%= new Date() %>";
     </script>
     
-    <script type="text/javascript" src="<%= server %>/apps/<%= sdk %>/sdk-debug.js?apiKey=<%= apiKey %>"></script>
+    <script type="text/javascript" src="<%= auth.server %>/apps/<%= sdk %>/sdk-debug.js?apiKey=__PUT_API_KEY_HERE__"></script>
 
 <!-- for confluence, don't render as a viewport, so we override the app creation step -->
 

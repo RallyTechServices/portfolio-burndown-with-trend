@@ -2,12 +2,13 @@
 <html>
 <head>
     <title>Portfolio Item Burnup With Trend</title>
-    <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Jan 20 2016 19:43:55 GMT-0800 (PST) -->
+    <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
+    <!--  Build Date: Sun Apr 24 2016 19:30:11 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Jan 20 2016 19:43:55 GMT-0800 (PST)";
-        var CHECKSUM = 99091378168;
+        var APP_BUILD_DATE = "Sun Apr 24 2016 19:30:11 GMT-0700 (MST)";
+        var BUILDER = "jmartin";
+        var CHECKSUM = 99030398738;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>

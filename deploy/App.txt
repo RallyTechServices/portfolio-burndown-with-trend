@@ -3,12 +3,12 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Sun Apr 24 2016 19:30:11 GMT-0700 (MST) -->
+    <!--  Build Date: Sun Apr 24 2016 20:29:32 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Apr 24 2016 19:30:11 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Sun Apr 24 2016 20:29:32 GMT-0700 (MST)";
         var BUILDER = "jmartin";
-        var CHECKSUM = 99030398738;
+        var CHECKSUM = 101702354528;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -876,7 +876,7 @@ Ext.define('Rally.technicalservices.Logger',{
                     {
 
                         xtype: 'rallybutton',
-                        text: 'Choose',
+                        text: 'Add',
                         itemId: 'portfolioItemButton',
                         cls: 'piButton primary small'
                     },
@@ -885,7 +885,7 @@ Ext.define('Rally.technicalservices.Logger',{
                         cls: 'piDisplayField',
                         items: [
                             {
-                                xtype: 'displayfield',
+                                xtype: 'container',
                                 itemId: 'portfolioItemDisplay',
                                 value: "&nbsp;"
                             }
@@ -904,7 +904,7 @@ Ext.define('Rally.technicalservices.Logger',{
         _addTestClass: function () {
             this.addCls(Rally.util.Test.toBrowserTestCssClass('buttonChooser'));
         },
-
+        
         beforeRender: function () {
             this._configureButton();
             this._configurePicker();
@@ -917,7 +917,7 @@ Ext.define('Rally.technicalservices.Logger',{
         _configurePicker: function () {
             this._setValueFromSettings();
             this._setupRequestContext();
-            this._loadPortfolioItem();
+            this._loadPortfolioItems();
         },
 
         _setupRequestContext: function () {
@@ -944,42 +944,51 @@ Ext.define('Rally.technicalservices.Logger',{
             return value && value !== "undefined";
         },
 
-        _loadPortfolioItem: function () {
+        _loadPortfolioItems: function () {
             if (this._isSavedValueValid()) {
                 this._createPortfolioItemStore();
             }
         },
 
         _createPortfolioItemStore: function () {
-            Ext.create("Rally.data.wsapi.Store", {
-                model: Ext.identityFn("Portfolio Item"),
-                filters: [
-                    {
+            if ( Ext.isEmpty(this.value) || this.value.length === 0 ) {
+                return;
+            }
+            var filters = Rally.data.wsapi.Filter.or(
+                Ext.Array.map(this.value,function(pi_ref){
+                    return {
                         property: "ObjectID",
                         operator: "=",
-                        value: Rally.util.Ref.getOidFromRef(this.value)
-                    }
-                ],
+                        value: Rally.util.Ref.getOidFromRef(pi_ref)
+                    };
+                })
+            );
+            
+            Ext.create("Rally.data.wsapi.Store", {
+                model: Ext.identityFn("Portfolio Item"),
+                filters: filters,
                 context: this.requestContext,
                 autoLoad: true,
                 listeners: {
-                    load: this._onPortfolioItemRetrieved,
+                    load: this._onPortfolioItemsRetrieved,
                     scope: this
                 }
             });
         },
 
         _isSavedValueValid: function () {
-            return typeof this.value === "string" && this.value !== "undefined";
+            return Ext.isArray(this.value) && this.value !== "undefined";
         },
 
-        _onPortfolioItemRetrieved: function (store) {
-            var storeData = store.getAt(0);
+        _onPortfolioItemsRetrieved: function (store,records) {
+            var storeData = records;
             this._handleStoreResults(storeData);
         },
 
         _setDisplayValue: function () {
-            this.down("#portfolioItemDisplay").setValue(this._getPortfolioItemDisplay());
+            var container = this.down('#portfolioItemDisplay');
+            container.removeAll();
+            container.add(this._getPortfolioItemDisplay());
         },
 
         _onButtonClick: function () {
@@ -996,23 +1005,46 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         _getPortfolioItemDisplay: function () {
-            if ( this.portfolioItems && Ext.isArray(this.portfolioItems) ) {
-                if ( this.portfolioItems.length == 1 ) {
-                    return this.portfolioItems[0].FormattedID + ': ' + this.portfolioItems[0].Name;
-                }
-                return Ext.Array.map(this.portfolioItems, function(pi) { return pi.FormattedID; }).join(',');
+            if ( Ext.isEmpty(this.portfolioItems) ) {
+                return;
             }
-            return this.portfolioItem.FormattedID + ': ' + this.portfolioItem.Name;
+            if ( ! Ext.isArray(this.portfolioItems) ) {
+                this.portfolioItems = [this.portfolioItems];
+            }
+            
+            return Ext.Array.map(this.portfolioItems, function(pi){
+                return {
+                    xtype:'button',
+                    cls: 'project-button',
+                    text: pi.FormattedID + " <span class='icon-delete'></span>",
+                    listeners: {
+                        scope: this, 
+                        click: function() {
+                            this._removeItem(pi);
+                        }
+                    }
+                };
+            },this);
         },
 
+        _removeItem: function(record) {
+            this.portfolioItems = Ext.Array.filter(this.portfolioItems, function(pi){
+                return ( record.FormattedID != pi.FormattedID );
+            });
+            
+            this.portfolioItemRefs = Ext.Array.map(this.portfolioItems, function(pi) { return pi._ref; });
+            this.setValue(this.portfolioItemRefs);
+            this.sendSettingsChange(this.portfolioItems);
+
+            this._setDisplayValue();
+        },
+        
         _onPortfolioItemChosen: function (dialog,resultStore) {
             this._handleStoreResults(resultStore);
             this._destroyChooser();
         },
 
         _handleStoreResults: function(store) {
-            console.log('_handleStoreResults', store);
-            
             if (store) {
                 if ( Ext.isArray(store) ) {
 
@@ -1032,15 +1064,13 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         _getChooserConfig: function () {
-            console.log('open chooser', this.value);
             return {
                 artifactTypes: ['portfolioitem'],
                 multiple: true,
                 height: 350,
-                title: 'Choose a Portfolio Item',
+                title: 'Choose Portfolio Item(s) to Add',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',
-                selectedRecords: this.value,
                 listeners: {
                     artifactChosen: this._onPortfolioItemChosen,
                     scope: this
@@ -1059,7 +1089,6 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         setValue: function (value) {
-            console.log('set value', value);
             
             if (value && value !== "undefined") {
                 if ( Ext.isString(value) ) {
@@ -1073,7 +1102,6 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         getSubmitData: function () {
-            console.log("getSubmitData");
             var returnObject = {};
 
             if ( this.portfolioItemRefs && Ext.isArray(this.portfolioItemRefs) ) {
@@ -1088,7 +1116,6 @@ Ext.define('Rally.technicalservices.Logger',{
                 returnObject.portfolioItemPicker = "";
             }
 
-            console.log('returning', returnObject);
             return returnObject;
         }
     });
@@ -1881,7 +1908,6 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 show_line = false;
             }
             
-            console.log('--', Math.abs(Rally.util.DateTime.getDifference(this.trend_date, planned_end_date, 'day')));
             var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
             console.log('trend date/projected index', this.trend_date, projected_date_index);
             console.log('planned', planned_end_date);
@@ -2264,6 +2290,27 @@ Ext.define("TSPIBurnupWithTrend", {
     margin-top: 25px;
     margin-right: 5px;
     cursor: pointer;
+}
+.project-box {
+    font: 9px arial, sans-serif !important;
+    background-color: #D3D3D3;
+    color: black;
+    border: 1px solid black;
+    padding: 3px;
+    margin: 3px;
+}
+
+.project-button {
+    font: 9px arial, sans-serif !important;
+    background-color: #fff;
+    color: black;
+    border: none;
+    padding: 3px;
+}
+
+.project-button.x-btn-default-small .x-btn-inner {
+    font: 9px arial, sans-serif !important;
+    color: black;
 }
     </style>
 

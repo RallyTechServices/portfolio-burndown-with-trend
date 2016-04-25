@@ -202,7 +202,6 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 show_line = false;
             }
             
-            console.log('--', Math.abs(Rally.util.DateTime.getDifference(this.trend_date, planned_end_date, 'day')));
             var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
             console.log('trend date/projected index', this.trend_date, projected_date_index);
             console.log('planned', planned_end_date);

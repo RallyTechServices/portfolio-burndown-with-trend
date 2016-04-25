@@ -39,7 +39,7 @@
                     {
 
                         xtype: 'rallybutton',
-                        text: 'Choose',
+                        text: 'Add',
                         itemId: 'portfolioItemButton',
                         cls: 'piButton primary small'
                     },
@@ -48,7 +48,7 @@
                         cls: 'piDisplayField',
                         items: [
                             {
-                                xtype: 'displayfield',
+                                xtype: 'container',
                                 itemId: 'portfolioItemDisplay',
                                 value: "&nbsp;"
                             }
@@ -67,7 +67,7 @@
         _addTestClass: function () {
             this.addCls(Rally.util.Test.toBrowserTestCssClass('buttonChooser'));
         },
-
+        
         beforeRender: function () {
             this._configureButton();
             this._configurePicker();
@@ -80,7 +80,7 @@
         _configurePicker: function () {
             this._setValueFromSettings();
             this._setupRequestContext();
-            this._loadPortfolioItem();
+            this._loadPortfolioItems();
         },
 
         _setupRequestContext: function () {
@@ -107,42 +107,51 @@
             return value && value !== "undefined";
         },
 
-        _loadPortfolioItem: function () {
+        _loadPortfolioItems: function () {
             if (this._isSavedValueValid()) {
                 this._createPortfolioItemStore();
             }
         },
 
         _createPortfolioItemStore: function () {
-            Ext.create("Rally.data.wsapi.Store", {
-                model: Ext.identityFn("Portfolio Item"),
-                filters: [
-                    {
+            if ( Ext.isEmpty(this.value) || this.value.length === 0 ) {
+                return;
+            }
+            var filters = Rally.data.wsapi.Filter.or(
+                Ext.Array.map(this.value,function(pi_ref){
+                    return {
                         property: "ObjectID",
                         operator: "=",
-                        value: Rally.util.Ref.getOidFromRef(this.value)
-                    }
-                ],
+                        value: Rally.util.Ref.getOidFromRef(pi_ref)
+                    };
+                })
+            );
+            
+            Ext.create("Rally.data.wsapi.Store", {
+                model: Ext.identityFn("Portfolio Item"),
+                filters: filters,
                 context: this.requestContext,
                 autoLoad: true,
                 listeners: {
-                    load: this._onPortfolioItemRetrieved,
+                    load: this._onPortfolioItemsRetrieved,
                     scope: this
                 }
             });
         },
 
         _isSavedValueValid: function () {
-            return typeof this.value === "string" && this.value !== "undefined";
+            return Ext.isArray(this.value) && this.value !== "undefined";
         },
 
-        _onPortfolioItemRetrieved: function (store) {
-            var storeData = store.getAt(0);
+        _onPortfolioItemsRetrieved: function (store,records) {
+            var storeData = records;
             this._handleStoreResults(storeData);
         },
 
         _setDisplayValue: function () {
-            this.down("#portfolioItemDisplay").setValue(this._getPortfolioItemDisplay());
+            var container = this.down('#portfolioItemDisplay');
+            container.removeAll();
+            container.add(this._getPortfolioItemDisplay());
         },
 
         _onButtonClick: function () {
@@ -159,23 +168,46 @@
         },
 
         _getPortfolioItemDisplay: function () {
-            if ( this.portfolioItems && Ext.isArray(this.portfolioItems) ) {
-                if ( this.portfolioItems.length == 1 ) {
-                    return this.portfolioItems[0].FormattedID + ': ' + this.portfolioItems[0].Name;
-                }
-                return Ext.Array.map(this.portfolioItems, function(pi) { return pi.FormattedID; }).join(',');
+            if ( Ext.isEmpty(this.portfolioItems) ) {
+                return;
             }
-            return this.portfolioItem.FormattedID + ': ' + this.portfolioItem.Name;
+            if ( ! Ext.isArray(this.portfolioItems) ) {
+                this.portfolioItems = [this.portfolioItems];
+            }
+            
+            return Ext.Array.map(this.portfolioItems, function(pi){
+                return {
+                    xtype:'button',
+                    cls: 'project-button',
+                    text: pi.FormattedID + " <span class='icon-delete'></span>",
+                    listeners: {
+                        scope: this, 
+                        click: function() {
+                            this._removeItem(pi);
+                        }
+                    }
+                };
+            },this);
         },
 
+        _removeItem: function(record) {
+            this.portfolioItems = Ext.Array.filter(this.portfolioItems, function(pi){
+                return ( record.FormattedID != pi.FormattedID );
+            });
+            
+            this.portfolioItemRefs = Ext.Array.map(this.portfolioItems, function(pi) { return pi._ref; });
+            this.setValue(this.portfolioItemRefs);
+            this.sendSettingsChange(this.portfolioItems);
+
+            this._setDisplayValue();
+        },
+        
         _onPortfolioItemChosen: function (dialog,resultStore) {
             this._handleStoreResults(resultStore);
             this._destroyChooser();
         },
 
         _handleStoreResults: function(store) {
-            console.log('_handleStoreResults', store);
-            
             if (store) {
                 if ( Ext.isArray(store) ) {
 
@@ -195,15 +227,13 @@
         },
 
         _getChooserConfig: function () {
-            console.log('open chooser', this.value);
             return {
                 artifactTypes: ['portfolioitem'],
                 multiple: true,
                 height: 350,
-                title: 'Choose a Portfolio Item',
+                title: 'Choose Portfolio Item(s) to Add',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',
-                selectedRecords: this.value,
                 listeners: {
                     artifactChosen: this._onPortfolioItemChosen,
                     scope: this
@@ -222,7 +252,6 @@
         },
 
         setValue: function (value) {
-            console.log('set value', value);
             
             if (value && value !== "undefined") {
                 if ( Ext.isString(value) ) {
@@ -236,7 +265,6 @@
         },
 
         getSubmitData: function () {
-            console.log("getSubmitData");
             var returnObject = {};
 
             if ( this.portfolioItemRefs && Ext.isArray(this.portfolioItemRefs) ) {
@@ -251,7 +279,6 @@
                 returnObject.portfolioItemPicker = "";
             }
 
-            console.log('returning', returnObject);
             return returnObject;
         }
     });

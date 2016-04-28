@@ -3,12 +3,12 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Apr 28 2016 09:39:27 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Apr 28 2016 10:41:33 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Apr 28 2016 09:39:27 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Thu Apr 28 2016 10:41:33 GMT-0700 (PDT)";
         var BUILDER = "jmartin";
-        var CHECKSUM = 103050912361;
+        var CHECKSUM = 103879254460;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1092,6 +1092,9 @@ Ext.define('Rally.technicalservices.Logger',{
                 title: 'Choose Portfolio Item(s) to Add',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',
+                _isArtifactEditable: function(record) {
+                    return true;
+                },
                 listeners: {
                     artifactChosen: this._onPortfolioItemChosen,
                     scope: this
@@ -1103,7 +1106,10 @@ Ext.define('Rally.technicalservices.Logger',{
                 },
                 gridConfig: {
                     viewConfig: {
-                        emptyText: Rally.ui.EmptyTextFactory.getEmptyTextFor(this.emptyText)
+                        emptyText: Rally.ui.EmptyTextFactory.getEmptyTextFor(this.emptyText),
+                        getRowClass: function(record) {
+                            return Rally.util.Test.toBrowserTestCssClass('row', record.getId()) + '';
+                        }
                     }
                 }
             };
@@ -2173,7 +2179,8 @@ Ext.define("TSPIBurnupWithTrend", {
                 hydrate: ["ScheduleState"],
                 sort: {
                     "_ValidFrom": 1
-                }
+                },
+                removeUnauthorizedSnapshots: true
             },
 
             calculatorType: "Rally.apps.charts.rpm.burn.BurnCalculator",

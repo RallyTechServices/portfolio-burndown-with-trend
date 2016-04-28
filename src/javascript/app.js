@@ -51,7 +51,8 @@ Ext.define("TSPIBurnupWithTrend", {
                 hydrate: ["ScheduleState"],
                 sort: {
                     "_ValidFrom": 1
-                }
+                },
+                removeUnauthorizedSnapshots: true
             },
 
             calculatorType: "Rally.apps.charts.rpm.burn.BurnCalculator",

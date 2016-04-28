@@ -255,6 +255,9 @@
                 title: 'Choose Portfolio Item(s) to Add',
                 closeAction: 'destroy',
                 selectionButtonText: 'Select',
+                _isArtifactEditable: function(record) {
+                    return true;
+                },
                 listeners: {
                     artifactChosen: this._onPortfolioItemChosen,
                     scope: this
@@ -266,7 +269,10 @@
                 },
                 gridConfig: {
                     viewConfig: {
-                        emptyText: Rally.ui.EmptyTextFactory.getEmptyTextFor(this.emptyText)
+                        emptyText: Rally.ui.EmptyTextFactory.getEmptyTextFor(this.emptyText),
+                        getRowClass: function(record) {
+                            return Rally.util.Test.toBrowserTestCssClass('row', record.getId()) + '';
+                        }
                     }
                 }
             };

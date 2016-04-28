@@ -3,12 +3,12 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Sun Apr 24 2016 20:29:32 GMT-0700 (MST) -->
+    <!--  Build Date: Thu Apr 28 2016 09:39:27 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Apr 24 2016 20:29:32 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Thu Apr 28 2016 09:39:27 GMT-0700 (PDT)";
         var BUILDER = "jmartin";
-        var CHECKSUM = 101702354528;
+        var CHECKSUM = 103050912361;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1040,16 +1040,37 @@ Ext.define('Rally.technicalservices.Logger',{
         },
         
         _onPortfolioItemChosen: function (dialog,resultStore) {
-            this._handleStoreResults(resultStore);
+            var items = Ext.Array.merge(resultStore, this.portfolioItems);
+                        
+            this._handleStoreResults(items);
             this._destroyChooser();
+        },
+        
+        _filterUniquePIs: function(items) {
+            var hash = {};
+            Ext.Array.each(items, function(item) {
+                var ref = item._ref || item.get('_ref');
+                hash[ref] = item;
+            });
+            
+            return Ext.Object.getValues(hash);
         },
 
         _handleStoreResults: function(store) {
             if (store) {
                 if ( Ext.isArray(store) ) {
-
-                    this.portfolioItems = Ext.Array.map(store, function(pi) { return pi.getData(); });
-                    this.portfolioItemRefs = Ext.Array.map(store, function(pi) { return pi.get('_ref'); });
+                    var pis = Ext.Array.map(store, function(pi) { 
+                        if ( Ext.isFunction(pi.getData) ) {
+                            return pi.getData();
+                        }
+                        return pi;
+                    });
+                    
+                    this.portfolioItems = this._filterUniquePIs(pis);
+                    
+                    this.portfolioItemRefs = Ext.Array.map(this.portfolioItems, function(pi) {
+                        return pi._ref;
+                    });
                     
                     this._setDisplayValue();
                     this.setValue(this.portfolioItemRefs);

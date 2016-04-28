@@ -203,16 +203,37 @@
         },
         
         _onPortfolioItemChosen: function (dialog,resultStore) {
-            this._handleStoreResults(resultStore);
+            var items = Ext.Array.merge(resultStore, this.portfolioItems);
+                        
+            this._handleStoreResults(items);
             this._destroyChooser();
+        },
+        
+        _filterUniquePIs: function(items) {
+            var hash = {};
+            Ext.Array.each(items, function(item) {
+                var ref = item._ref || item.get('_ref');
+                hash[ref] = item;
+            });
+            
+            return Ext.Object.getValues(hash);
         },
 
         _handleStoreResults: function(store) {
             if (store) {
                 if ( Ext.isArray(store) ) {
-
-                    this.portfolioItems = Ext.Array.map(store, function(pi) { return pi.getData(); });
-                    this.portfolioItemRefs = Ext.Array.map(store, function(pi) { return pi.get('_ref'); });
+                    var pis = Ext.Array.map(store, function(pi) { 
+                        if ( Ext.isFunction(pi.getData) ) {
+                            return pi.getData();
+                        }
+                        return pi;
+                    });
+                    
+                    this.portfolioItems = this._filterUniquePIs(pis);
+                    
+                    this.portfolioItemRefs = Ext.Array.map(this.portfolioItems, function(pi) {
+                        return pi._ref;
+                    });
                     
                     this._setDisplayValue();
                     this.setValue(this.portfolioItemRefs);

@@ -34,7 +34,9 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
          */
         showTrend: false,
         
-        plotLines: []
+        plotLines: [],
+        
+        nameOfCompletedSeries: 'Accepted'
     },
 
     getDerivedFieldsOnInput: function () {
@@ -100,7 +102,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 },
                 {
                     "field": "CompletedStoryCount",
-                    "as": "Completed",
+                    "as": this.nameOfCompletedSeries,
                     "f": "sum",
                     "display": "column"
                 }
@@ -116,7 +118,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 },
                 {
                     "field": "PlannedCompleted",
-                    "as": "Completed",
+                    "as": this.nameOfCompletedSeries,
                     "f": "sum",
                     "display": "column"
                 }
@@ -239,14 +241,14 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         
         if ( today_index > -1 ) {
             Ext.Array.each(data.series, function(series) {
-                if ( series.name == "Completed" ) {
+                if ( series.name == this.nameOfCompletedSeries ) {
                     Ext.Array.each( series.data, function(datum,idx){
                         if ( idx > today_index ) {
                             series.data[idx] = null;
                         }
                     });
                 }
-            });
+            },this);
         }
         
         return data;
@@ -271,13 +273,13 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         var scope_series = [];
         
         Ext.Array.each( data.series, function(s) {
-            if ( s.name == "Completed" ) {
+            if ( s.name == this.nameOfCompletedSeries ) {
                 completed_series = s;
             }
             if ( s.name == "Planned" ) {
                 scope_series = s;
             }
-        });
+        },this);
         
         var index_of_first_accepted = -1;
         // is there an actual value today?  
@@ -376,13 +378,13 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
         var scope_series = [];
         
         Ext.Array.each( data.series, function(s) {
-            if ( s.name == "Completed" ) {
+            if ( s.name == this.nameOfCompletedSeries ) {
                 completed_series = s;
             }
             if ( s.name == "Planned" ) {
                 scope_series = s;
             }
-        });
+        },this);
         
         var scope = scope_series.data[scope_series.data.length-1];
         for ( var i=0; i<count_beyond_current; i++ ) {

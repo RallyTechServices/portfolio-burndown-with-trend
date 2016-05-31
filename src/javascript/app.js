@@ -63,8 +63,10 @@ Ext.define("TSPIBurnupWithTrend", {
                 hideBarsAfterToday: true,
                 showTrend: true
             },
-    
-            chartColors: [], // reset so we can define our own palette
+
+            chartColors: palette.getChartColors(), 
+
+            //chartColors: [], // reset so we can define our own palette
     
             chartConfig: {
                 chart: {
@@ -105,11 +107,11 @@ Ext.define("TSPIBurnupWithTrend", {
                         groupPadding: 0.01
                     },
                     line: {
-                        color: palette.burnLineColor()
+                        //color: palette.burnLineColor()
                     },
                     column: {
                         stacking: null,
-                        color: palette.burnColumnColor(),
+                        //color: palette.burnColumnColor(),
                         shadow: false
                     }
                 }

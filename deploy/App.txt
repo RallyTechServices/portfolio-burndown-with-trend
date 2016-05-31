@@ -3,15 +3,15 @@
 <head>
     <title>Portfolio Item Burnup With Trend</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Apr 28 2016 10:41:33 GMT-0700 (PDT) -->
+    <!--  Build Date: Tue May 31 2016 13:59:02 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Apr 28 2016 10:41:33 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Tue May 31 2016 13:59:02 GMT-0700 (PDT)";
         var BUILDER = "jmartin";
-        var CHECKSUM = 103879254460;
+        var CHECKSUM = 104685959729;
     </script>
     
-    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
 
     <script type="text/javascript">
         Rally.onReady(function() {
@@ -193,6 +193,7 @@ Ext.define('Rally.technicalservices.Logger',{
         purple : "#7832A5",  // $purple,
         pink : "#DA1884",   // $pink,
         grey7 : "#666",
+        red: "#F11",
 
         cumulativeFlowColors : function() {
             return [
@@ -200,6 +201,8 @@ Ext.define('Rally.technicalservices.Logger',{
             ];
         },
 
+        getChartColors: function() { return  [ this.red, this.lime, this.blue ]; },
+        
         burnLineColor : function (){ return this.blue; },
         burnColumnColor : function() { return this.lime; }
     });
@@ -1900,6 +1903,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 color: '#000',
                 label: { text: 'today' },
                 width: 2,
+                zIndex: 5, // above series
                 value: today_index
             });
         }
@@ -1923,6 +1927,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                     color: '#000',
                     label: { text: 'planned end' },
                     width: 2,
+                    zIndex: 5, // above series
                     value: end_date_index
                 });
             }
@@ -1944,6 +1949,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                     color: '#000',
                     label: { text: 'projected end' },
                     width: 2,
+                    zIndex: 5, //above series
                     value: projected_date_index
                 });
             }
@@ -2191,8 +2197,10 @@ Ext.define("TSPIBurnupWithTrend", {
                 hideBarsAfterToday: true,
                 showTrend: true
             },
-    
-            chartColors: [], // reset so we can define our own palette
+
+            chartColors: palette.getChartColors(), 
+
+            //chartColors: [], // reset so we can define our own palette
     
             chartConfig: {
                 chart: {
@@ -2233,11 +2241,11 @@ Ext.define("TSPIBurnupWithTrend", {
                         groupPadding: 0.01
                     },
                     line: {
-                        color: palette.burnLineColor()
+                        //color: palette.burnLineColor()
                     },
                     column: {
                         stacking: null,
-                        color: palette.burnColumnColor(),
+                        //color: palette.burnColumnColor(),
                         shadow: false
                     }
                 }

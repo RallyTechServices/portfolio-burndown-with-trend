@@ -167,6 +167,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                 color: '#000',
                 label: { text: 'today' },
                 width: 2,
+                zIndex: 5, // above series
                 value: today_index
             });
         }
@@ -190,6 +191,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                     color: '#000',
                     label: { text: 'planned end' },
                     width: 2,
+                    zIndex: 5, // above series
                     value: end_date_index
                 });
             }
@@ -211,6 +213,7 @@ Ext.define("Rally.apps.charts.rpm.burn.BurnCalculator", {
                     color: '#000',
                     label: { text: 'projected end' },
                     width: 2,
+                    zIndex: 5, //above series
                     value: projected_date_index
                 });
             }

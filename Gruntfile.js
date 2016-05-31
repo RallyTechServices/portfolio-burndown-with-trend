@@ -238,7 +238,7 @@ module.exports = function(grunt) {
                 if ( response.statusCode != 200 ) {
                     grunt.log.writeln('oops');
                 }
-                //grunt.log.writeln('response body', body);
+                grunt.log.writeln('response body:', body);
                 grunt.log.writeln('done');
             });
         };
@@ -276,31 +276,40 @@ module.exports = function(grunt) {
                 // looking for
                 // {"oid":52337581989}
                 var response_object = JSON.parse(body);
+               
                 
                 // save IDs:
                 grunt.log.writeln('Save IDs');
                 config.auth.pageOid = page_oid;
                 config.auth.panelOid = response_object.oid;
                 grunt.file.write(auth_file_name,JSON.stringify(config.auth,null,'\t') + "\r\n");
-                
+              
+                grunt.log.writeln('response: ', response_object);  
                 grunt.log.writeln('Created panel with oid:', response_object.oid);
                 installApp(page_oid,response_object.oid);
             });
         };
         
         var makePage = function(key) {
-            var uri = config.auth.server + "/slm/wt/edit/create.sp";
+            //var uri = config.auth.server + "/slm/wt/edit/create.sp";
+            var uri = config.auth.server + "/slm/wt/edit/createAndClose.sp";
             var parameters = {
-                cpoid:729766,
+                //cpoid:729766,
+                cpoid:10909656256,
+                oid: 55525812863,
                 key: key
             };
 
             var payload = {
                 name: "*" + config.name,
+                sharedProjects: '',
                 editorMode: 'create',
+                version: 0,
                 pid: 'myhome',
-                oid: 6440917,
-                timeboxFilter:'none' 
+                //oid: 6440917,
+                //oid: 55525659731,
+                oid: 55525812863,
+                timeboxFilter:'none'
             };
 
             grunt.log.writeln('Creating page:', payload.name);
@@ -309,26 +318,34 @@ module.exports = function(grunt) {
                 uri: uri,
                 form: payload,
                 qs: parameters,
-                jar: j
+                jar: j,
+                headers: {'content-type' : 'application/x-www-form-urlencoded'}
             };
         
             request.post(options, function(error,response,body){
                 //grunt.log.writeln('responseCode:', response.statusCode);
                 if ( response.statusCode != 200 ) {
                     grunt.log.writeln('oops');
-                    //grunt.log.writeln('--', response.headers);
-                    //grunt.log.writeln('--', response.request.headers);
-                    //grunt.log.writeln('--', response.request.body);
                 }
                 //grunt.log.writeln('response:', response);
-                //grunt.log.writeln('response body', body);
+                grunt.log.writeln('response body', body);
+                grunt.log.writeln('--');
                 // looking for
                 // <input type="hidden" name="oid" value="52337144851"/>
-                var page_oid = body.replace(/(.|[\r\n])*name="oid"/,"").replace(/"\/\>(.|[\r\n])*/,"").replace(/.*"/,"");
+                //var page_oid = body.replace(/(.|[\r\n])*name="oid"/,"").replace(/"\/\>(.|[\r\n])*/,"").replace(/.*"/,"");
+                // now looking for some close junk
+                var page_oid_array = body.replace(/(.|[\r\n])*refreshWindow\(/,"").replace(/\).*(.|[\r\n])*/,"").split(',');
+
+                if ( page_oid_array.length < 2 ) {
+                    grunt.log.writeln("Problem!");
+                } else {
+                    grunt.log.writeln('--', page_oid_array); 
+                    var page_oid = page_oid_array[1].replace(/\'/g,'');
                 
-                grunt.log.writeln('Created', payload.name, " at oid:", page_oid);
+                    grunt.log.writeln('Created', payload.name, " at oid:", page_oid);
                 
-                makeApp(key,page_oid)
+                    makeApp(key,page_oid)
+                }
             });
         };
        

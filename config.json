@@ -2,7 +2,7 @@
     "name": "Portfolio Item Burnup With Trend",
     "className": "TSPIBurnupWithTrend",
     "server": "https://us1.rallydev.com",
-    "sdk": "2.0",
+    "sdk": "2.1",
     "apiKey": "_PUT_APIKEY_HERE_",
     "javascript": [
       "utils/__ts-info-link.js",

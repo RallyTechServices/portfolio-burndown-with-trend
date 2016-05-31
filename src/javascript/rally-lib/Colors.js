@@ -14,6 +14,7 @@
         purple : "#7832A5",  // $purple,
         pink : "#DA1884",   // $pink,
         grey7 : "#666",
+        red: "#F11",
 
         cumulativeFlowColors : function() {
             return [
@@ -21,6 +22,8 @@
             ];
         },
 
+        getChartColors: function() { return  [ this.red, this.lime, this.blue ]; },
+        
         burnLineColor : function (){ return this.blue; },
         burnColumnColor : function() { return this.lime; }
     });
